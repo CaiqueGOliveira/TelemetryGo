@@ -1,9 +1,17 @@
 package main
 
 import (
-	"fmt"
+	"log"
+
+	"github.com/CaiqueGOliveira/TelemetryGo/src/bootstrap"
 )
 
 func main() {
-	fmt.Println("teste")
+	router := bootstrap.AppBootstrap()
+
+	log.Println("Server running at port 8080...")
+
+	if err := router.Run(":8080"); err != nil {
+		log.Fatalf("Error on server initializing: %v", err)
+	}
 }

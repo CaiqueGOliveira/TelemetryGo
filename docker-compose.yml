@@ -1,0 +1,37 @@
+services:
+  web:
+    ports:
+      - 8080:8080
+
+    networks:
+      - public_net
+
+    depends_on:
+      - server
+
+  server:
+    ports:
+      - 3000:3000
+
+    networks:
+      - public_net
+      - private_net
+
+    depends_on:
+      - database
+
+  database:
+    image: mongodb
+
+    volumes:
+      - db_storage:/var/lib/mongodb
+
+    networks:
+      - private_net
+
+volumes:
+  db_data:
+
+networks:
+  public_net:
+  private_net:
