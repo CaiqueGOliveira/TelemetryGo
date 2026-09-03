@@ -1,36 +1,85 @@
 services:
   web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile.dev
     ports:
-      - 8080:8080
-
+      - "3000:3000"
     networks:
       - public_net
-
+    volumes:
+      - ./web:/app
+      - /app/node_modules
+    environment:
+      # Dentro da rede docker, a web alcança o server via o nome do serviço
+      BACKEND_URL: http://server:8080
+      NEXT_TELEMETRY_DISABLED: "1"
     depends_on:
-      - server
+      server:
+        condition: service_started
+    restart: unless-stopped
 
   server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile.dev
     ports:
-      - 3000:3000
-
+      - "8080:8080"
     networks:
       - public_net
       - private_net
+    # Sem integração com banco ainda (repositório em memória no server).
+    # Para subir sem depender dos bancos, manter estes depends_on comentados:
+    # depends_on:
+    #   database1:
+    #     condition: service_healthy
+    #   database2:
+    #     condition: service_healthy
+    environment:
+      JWT_SECRET: ${JWT_SECRET}
+      FRONTEND_URL: http://localhost:3000
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database2:5432/meubanco
+      MONGO_URL: mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@database1:27017/meubanco?authSource=admin
+    restart: unless-stopped
 
-    depends_on:
-      - database
-
-  database:
-    image: mongodb
-
+  database1:
+    image: mongo:7-jammy
     volumes:
-      - db_storage:/var/lib/mongodb
-
+      - mongo_data:/data/db
     networks:
       - private_net
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  database2:
+    image: postgres:16-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - private_net
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: meubanco
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
 
 volumes:
-  db_data:
+  mongo_data:
+  postgres_data:
 
 networks:
   public_net:

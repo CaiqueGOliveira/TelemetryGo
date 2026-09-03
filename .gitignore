@@ -1,0 +1,35 @@
+# ===== Ambiente =====
+.env
+.env.*
+!.env.example
+
+# ===== Go / backend (server/) =====
+/bin/
+/tmp/
+*.exe
+*.test
+*.out
+coverage.txt
+coverage.out
+vendor/
+
+# ===== Node / Next.js (web/) =====
+node_modules/
+.next/
+out/
+build/
+coverage/
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# misc
+.DS_Store
+*.pem
+*.tsbuildinfo
+
+# vercel
+.vercel
