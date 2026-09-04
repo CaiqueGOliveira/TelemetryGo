@@ -18,27 +18,15 @@ interface AuthState {
   setUser: (user: User | null) => void;
   login: (data: LoginFormData) => Promise<void>;
   register: (data: RegisterFormData) => Promise<void>;
-  logout: () => void;
-}
-
-function getStoredToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("access_token");
+  logout: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
-  accessToken: getStoredToken(),
+  accessToken: null,
   isLoading: false,
 
   setAccessToken: (token) => {
-    if (typeof window !== "undefined") {
-      if (token) {
-        localStorage.setItem("access_token", token);
-      } else {
-        localStorage.removeItem("access_token");
-      }
-    }
     set({ accessToken: token });
   },
 
@@ -49,9 +37,6 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       const { data: res } = await api.post<{ access_token: string }>("/v1/login", data);
       set({ accessToken: res.access_token });
-      if (typeof window !== "undefined") {
-        localStorage.setItem("access_token", res.access_token);
-      }
     } finally {
       set({ isLoading: false });
     }
@@ -70,10 +55,11 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
-  logout: () => {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("access_token");
+  logout: async () => {
+    try {
+      await api.post("/auth/logout");
+    } finally {
+      set({ user: null, accessToken: null });
     }
-    set({ user: null, accessToken: null });
   },
 }));

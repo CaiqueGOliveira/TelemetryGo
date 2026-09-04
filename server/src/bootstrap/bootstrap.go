@@ -26,7 +26,7 @@ func AppBootstrap() *gin.Engine {
 	createUserUsecase := application.NewCreateUserUsecase(repo, jwtProvider)
 	loginUsecase := application.NewLoginUsecase(jwtProvider, repo)
 
-	userController := controllers.NewUserController(createUserUsecase, loginUsecase, refreshExpiration)
+	userController := controllers.NewUserController(createUserUsecase, loginUsecase, refreshExpiration, jwtProvider)
 
 	router := routes.SetupRouter(userController, jwtProvider)
 

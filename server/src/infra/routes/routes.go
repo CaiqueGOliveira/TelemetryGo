@@ -22,6 +22,8 @@ func SetupRouter(userController *controllers.UserController, tokenProvider t.Tok
 
 		api.POST("/users", userController.CreateUser)
 		api.POST("/login", userController.Login)
+		api.POST("/auth/refresh", userController.RefreshToken)
+		api.POST("/auth/logout", userController.Logout)
 	}
 
 	protected := api.Group("")

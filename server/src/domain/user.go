@@ -23,6 +23,7 @@ func NewUser(id uuid.UUID, email string, name string, password string) (*User, e
 	passwordHash := &vo.PasswordHashed{}
 	hashed, err := passwordHash.CreateHash(password)
 	if err != nil {
+
 		return nil, err
 	}
 

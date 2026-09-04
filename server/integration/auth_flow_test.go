@@ -29,7 +29,7 @@ func setupRouter(t *testing.T) *gin.Engine {
 	createUserUsecase := application.NewCreateUserUsecase(repo, tokenProvider)
 	loginUsecase := application.NewLoginUsecase(tokenProvider, repo)
 
-	userController := controllers.NewUserController(createUserUsecase, loginUsecase, time.Hour*24*7)
+	userController := controllers.NewUserController(createUserUsecase, loginUsecase, time.Hour*24*7, tokenProvider)
 
 	return routes.SetupRouter(userController, tokenProvider)
 }
