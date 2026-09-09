@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -12,11 +13,21 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Check, Copy } from "lucide-react";
 
 export default function RegisterPage() {
   const router = useRouter();
   const registerUser = useAuthStore((s) => s.register);
   const isLoading = useAuthStore((s) => s.isLoading);
+  const [apiKey, setApiKey] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const {
     register,
@@ -27,8 +38,48 @@ export default function RegisterPage() {
   });
 
   async function onSubmit(data: RegisterFormData) {
-    await registerUser(data);
-    router.push("/login");
+    const res = await registerUser(data);
+    setApiKey(res.api_key);
+  }
+
+  async function copyApiKey() {
+    if (!apiKey) return;
+    await navigator.clipboard.writeText(apiKey);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  if (apiKey) {
+    return (
+      <div className="w-full max-w-md space-y-6">
+        <Card>
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl font-bold">Conta criada!</CardTitle>
+            <CardDescription>
+              Guarde sua API key. Você vai precisar dela para enviar métricas e
+              eventos.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="api_key">Sua API key</Label>
+              <div className="flex gap-2">
+                <Input id="api_key" readOnly value={apiKey} className="font-mono" />
+                <Button type="button" variant="outline" size="icon" onClick={copyApiKey}>
+                  {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Esta chave não será mostrada novamente.
+              </p>
+            </div>
+            <Button className="w-full" onClick={() => router.push("/login")}>
+              Ir para o login
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (

@@ -47,6 +47,7 @@ func (l *LoginUsecase) Execute(email, password string) (*dtos.LoginDto, error) {
 	response := dtos.NewLoginDto(
 		jwtAccess,
 		jwtRefresh,
+		user.ApiKey,
 	)
 
 	return response, nil

@@ -28,3 +28,13 @@ func (repo *UserRepository) FindByEmail(email string) (*domain.User, error) {
 
 	return nil, fmt.Errorf("user doesn't exist")
 }
+
+func (repo *UserRepository) FindByApiKey(apiKey string) (*domain.User, error) {
+	for _, user := range repo.users {
+		if user.ApiKey == apiKey {
+			return user, nil
+		}
+	}
+
+	return nil, fmt.Errorf("user with this api key doesn't exist")
+}

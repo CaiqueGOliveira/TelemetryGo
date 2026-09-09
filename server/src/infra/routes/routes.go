@@ -5,11 +5,12 @@ import (
 
 	t "github.com/CaiqueGOliveira/TelemetryGo/src/application/interfaces"
 	"github.com/CaiqueGOliveira/TelemetryGo/src/controllers"
+	r "github.com/CaiqueGOliveira/TelemetryGo/src/domain/repository"
 	"github.com/CaiqueGOliveira/TelemetryGo/src/infra/middleware"
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRouter(userController *controllers.UserController, tokenProvider t.TokenProvider) *gin.Engine {
+func SetupRouter(userController *controllers.UserController, eventController *controllers.EventController, metricController *controllers.MetricController, tokenProvider t.TokenProvider, userRepo r.UserRepository) *gin.Engine {
 	r := gin.Default()
 
 	api := r.Group("/api/v1")
@@ -24,15 +25,24 @@ func SetupRouter(userController *controllers.UserController, tokenProvider t.Tok
 		api.POST("/login", userController.Login)
 		api.POST("/auth/refresh", userController.RefreshToken)
 		api.POST("/auth/logout", userController.Logout)
-	}
 
-	protected := api.Group("")
-	protected.Use(middleware.Auth(tokenProvider))
-	{
-		protected.GET("/me", func(c *gin.Context) {
-			claims := c.MustGet("claims").(interface{})
-			c.JSON(http.StatusOK, gin.H{"claims": claims})
-		})
+		ingest := api.Group("")
+		ingest.Use(middleware.AuthApiKeyMiddleware(userRepo))
+		{
+			ingest.POST("/events", eventController.Ingest)
+			ingest.POST("/metrics", metricController.Ingest)
+		}
+
+		protected := api.Group("")
+		protected.Use(middleware.Auth(tokenProvider))
+		{
+			protected.GET("/me", func(c *gin.Context) {
+				claims := c.MustGet("claims")
+				c.JSON(http.StatusOK, gin.H{"claims": claims})
+			})
+			protected.GET("/events", eventController.List)
+			protected.GET("/metrics", metricController.List)
+		}
 	}
 
 	return r

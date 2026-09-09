@@ -67,6 +67,10 @@ func (h *PasswordHashed) GetPasswordHash() string {
 	return h.password
 }
 
+func NewPasswordHashedFromHash(hash string) *PasswordHashed {
+	return &PasswordHashed{password: hash}
+}
+
 func (h *PasswordHashed) Verify(text string) (bool, error) {
 	parts := strings.Split(h.password, "$")
 	if len(parts) != 6 {

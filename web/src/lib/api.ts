@@ -27,7 +27,9 @@ export function createApiClient(): AxiosInstance {
         original._retry = true;
         try {
           const { data } = await axios.post<{ access_token: string }>(
-            "/api/auth/refresh"
+            "/api/v1/auth/refresh",
+            undefined,
+            { withCredentials: true }
           );
           useAuthStore.getState().setAccessToken(data.access_token);
           original.headers.Authorization = `Bearer ${data.access_token}`;

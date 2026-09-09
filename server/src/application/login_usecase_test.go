@@ -35,6 +35,12 @@ func TestLoginSuccess(t *testing.T) {
 	if result.JwtAccess == "" || result.JwtRefresh == "" {
 		t.Fatal("expected non-empty tokens")
 	}
+	if result.ApiKey == "" {
+		t.Fatal("expected api key in login result")
+	}
+	if result.ApiKey != user.ApiKey {
+		t.Errorf("expected api key to match user, got %s != %s", result.ApiKey, user.ApiKey)
+	}
 }
 
 func TestLoginWrongPassword(t *testing.T) {

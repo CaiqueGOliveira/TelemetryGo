@@ -1,6 +1,7 @@
 package application
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -39,6 +40,12 @@ func TestCreateUserSuccess(t *testing.T) {
 	if result.JwtAccess == "" || result.JwtRefresh == "" {
 		t.Fatal("expected non-empty tokens")
 	}
+	if user.ApiKey == "" {
+		t.Fatal("expected non-empty api key")
+	}
+	if !strings.HasPrefix(user.ApiKey, "tg_") {
+		t.Errorf("expected api key to start with tg_, got %s", user.ApiKey)
+	}
 
 	saved, err := repo.FindByEmail(in.Email)
 	if err != nil {
@@ -46,6 +53,17 @@ func TestCreateUserSuccess(t *testing.T) {
 	}
 	if saved.Id != user.Id {
 		t.Errorf("expected saved user id to match, got %s != %s", saved.Id, user.Id)
+	}
+	if saved.ApiKey != user.ApiKey {
+		t.Errorf("expected saved api key to match, got %s != %s", saved.ApiKey, user.ApiKey)
+	}
+
+	found, err := repo.FindByApiKey(user.ApiKey)
+	if err != nil {
+		t.Fatalf("expected user to be found by api key, got: %v", err)
+	}
+	if found.Id != user.Id {
+		t.Errorf("expected api key lookup to return same user, got %s != %s", found.Id, user.Id)
 	}
 }
 

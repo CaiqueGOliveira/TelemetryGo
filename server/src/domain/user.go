@@ -8,10 +8,15 @@ import (
 )
 
 type User struct {
-	Id    uuid.UUID
-	Email *vo.Email
-	Name  string
-	Hash  *vo.PasswordHashed
+	Id     uuid.UUID
+	Email  *vo.Email
+	Name   string
+	Hash   *vo.PasswordHashed
+	ApiKey string
+}
+
+func newApiKey() string {
+	return "tg_" + uuid.New().String()
 }
 
 func NewUser(id uuid.UUID, email string, name string, password string) (*User, error) {
@@ -28,10 +33,11 @@ func NewUser(id uuid.UUID, email string, name string, password string) (*User, e
 	}
 
 	return &User{
-		Id:    id,
-		Email: valid_email,
-		Name:  name,
-		Hash:  hashed,
+		Id:     id,
+		Email:  valid_email,
+		Name:   name,
+		Hash:   hashed,
+		ApiKey: newApiKey(),
 	}, nil
 }
 
@@ -48,9 +54,10 @@ func (u *User) CreateUser(email string, name string, password string) (*User, er
 	}
 
 	return &User{
-		Id:    uuid.New(),
-		Email: valid_email,
-		Name:  name,
-		Hash:  hashed,
+		Id:     uuid.New(),
+		Email:  valid_email,
+		Name:   name,
+		Hash:   hashed,
+		ApiKey: newApiKey(),
 	}, nil
 }

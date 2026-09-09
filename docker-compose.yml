@@ -28,34 +28,35 @@ services:
     networks:
       - public_net
       - private_net
-    # Sem integração com banco ainda (repositório em memória no server).
-    # Para subir sem depender dos bancos, manter estes depends_on comentados:
-    # depends_on:
-    #   database1:
-    #     condition: service_healthy
-    #   database2:
-    #     condition: service_healthy
+    depends_on:
+      database1:
+        condition: service_healthy
+      database2:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
       JWT_SECRET: ${JWT_SECRET}
       FRONTEND_URL: http://localhost:3000
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database2:5432/meubanco
-      MONGO_URL: mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@database1:27017/meubanco?authSource=admin
+      CASSANDRA_HOSTS: database1
+      REDIS_URL: redis://redis:6379
     restart: unless-stopped
 
   database1:
-    image: mongo:7-jammy
+    image: cassandra:5.0
     volumes:
-      - mongo_data:/data/db
+      - cassandra_data:/var/lib/cassandra
     networks:
       - private_net
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+      CASSANDRA_CLUSTER_NAME: telemetrygo
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      test: ["CMD-SHELL", "cqlsh -e 'SELECT release_version FROM system.local'"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 12
+      start_period: 40s
     restart: unless-stopped
 
   database2:
@@ -77,9 +78,26 @@ services:
       retries: 5
     restart: unless-stopped
 
+  redis:
+    image: redis:7-alpine
+    command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - private_net
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
 volumes:
-  mongo_data:
+  cassandra_data:
   postgres_data:
+  redis_data:
 
 networks:
   public_net:

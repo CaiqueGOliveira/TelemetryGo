@@ -8,4 +8,5 @@ import (
 type UserRepository interface {
 	Save(user *vo.User) error
 	FindByEmail(email string) (*domain.User, error)
+	FindByApiKey(apiKey string) (*domain.User, error)
 }

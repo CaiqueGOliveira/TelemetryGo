@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	t "github.com/CaiqueGOliveira/TelemetryGo/src/application/interfaces"
 	jwt "github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
@@ -32,14 +33,14 @@ func (jw *JwtService) GenerateToken(userID uuid.UUID, tokenType string) (string,
 	now := time.Now()
 
 	switch tokenType {
-	case "access":
+	case t.TokenTypeAccess:
 		token = jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 			"sub": userID,
 			"exp": now.Add(jw.accessExpiration).Unix(),
 			"iat": now.Unix(),
 			"typ": tokenType,
 		})
-	case "refresh":
+	case t.TokenTypeRefresh:
 		token = jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 			"sub": userID,
 			"exp": now.Add(jw.refreshExpiration).Unix(),
@@ -66,10 +67,14 @@ func (jw *JwtService) VerifyToken(tokenString string) (jwt.MapClaims, error) {
 
 		return jw.secret, nil
 	})
-
-	if err != nil {
+	if err != nil || !token.Valid {
 		return nil, errors.New("invalid jwt token")
 	}
 
-	return token.Claims.(jwt.MapClaims), nil
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return nil, errors.New("invalid jwt token")
+	}
+
+	return claims, nil
 }

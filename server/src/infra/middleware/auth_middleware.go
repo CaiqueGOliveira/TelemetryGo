@@ -6,6 +6,7 @@ import (
 
 	t "github.com/CaiqueGOliveira/TelemetryGo/src/application/interfaces"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 func Auth(tokenProvider t.TokenProvider) gin.HandlerFunc {
@@ -28,7 +29,25 @@ func Auth(tokenProvider t.TokenProvider) gin.HandlerFunc {
 			return
 		}
 
+		if typ, _ := claims["typ"].(string); typ != t.TokenTypeAccess {
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid token type"})
+			return
+		}
+
+		sub, ok := claims["sub"].(string)
+		if !ok {
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
+			return
+		}
+
+		userID, err := uuid.Parse(sub)
+		if err != nil {
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
+			return
+		}
+
 		ctx.Set("claims", claims)
+		ctx.Set("user_id", userID.String())
 		ctx.Next()
 	}
 }

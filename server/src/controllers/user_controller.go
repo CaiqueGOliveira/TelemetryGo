@@ -46,7 +46,7 @@ func (uc *UserController) CreateUser(ctx *gin.Context) {
 		"refresh_token",
 		result.JwtRefresh,
 		int(uc.refreshExpiration.Seconds()),
-		"/api/auth/refresh",
+		"/api/v1/auth/refresh",
 		"",
 		false,
 		true,
@@ -57,6 +57,7 @@ func (uc *UserController) CreateUser(ctx *gin.Context) {
 		"name":         result.User.Name,
 		"email":        result.User.Email.Text(),
 		"access_token": result.JwtAccess,
+		"api_key":      result.User.ApiKey,
 	})
 }
 
@@ -79,7 +80,7 @@ func (uc *UserController) Login(ctx *gin.Context) {
 		"refresh_token",
 		result.JwtRefresh,
 		int(uc.refreshExpiration.Seconds()),
-		"/api/auth/refresh",
+		"/api/v1/auth/refresh",
 		"",
 		false,
 		true,
@@ -87,6 +88,7 @@ func (uc *UserController) Login(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"access_token": result.JwtAccess,
+		"api_key":      result.ApiKey,
 	})
 }
 
@@ -103,13 +105,24 @@ func (uc *UserController) RefreshToken(ctx *gin.Context) {
 		return
 	}
 
-	userID, err := uuid.Parse(claims["sub"].(string))
+	if typ, _ := claims["typ"].(string); typ != t.TokenTypeRefresh {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token type"})
+		return
+	}
+
+	sub, ok := claims["sub"].(string)
+	if !ok {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "invalid refresh token"})
+		return
+	}
+
+	userID, err := uuid.Parse(sub)
 	if err != nil {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "invalid refresh token"})
 		return
 	}
 
-	newAccess, err := uc.jwtProvider.GenerateToken(userID, "access")
+	newAccess, err := uc.jwtProvider.GenerateToken(userID, t.TokenTypeAccess)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "could not generate access token"})
 		return
@@ -126,7 +139,7 @@ func (uc *UserController) Logout(ctx *gin.Context) {
 		"refresh_token",
 		"",
 		-1,
-		"/api/auth/refresh",
+		"/api/v1/auth/refresh",
 		"",
 		false,
 		true,
