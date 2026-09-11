@@ -1,22 +1,30 @@
 package application
 
 import (
+	"context"
+	"encoding/json"
+	"log"
 	"sync"
 	"time"
 
 	"github.com/CaiqueGOliveira/TelemetryGo/src/application/dtos"
 	"github.com/CaiqueGOliveira/TelemetryGo/src/domain"
+	"github.com/CaiqueGOliveira/TelemetryGo/src/domain/messages"
 	r "github.com/CaiqueGOliveira/TelemetryGo/src/domain/repository"
 	"github.com/google/uuid"
 )
 
+const EventsChannel = "telemetry:events"
+
 type EventUsecase struct {
-	repo r.EventRepository
+	repo      r.EventRepository
+	publisher messages.EventPublisher
 }
 
-func NewEventUsecase(repo r.EventRepository) *EventUsecase {
+func NewEventUsecase(repo r.EventRepository, publisher messages.EventPublisher) *EventUsecase {
 	return &EventUsecase{
-		repo: repo,
+		repo:      repo,
+		publisher: publisher,
 	}
 }
 
@@ -49,6 +57,13 @@ func (uc *EventUsecase) Ingest(requests []*dtos.EventIngestRequestDto, userID st
 				return
 			}
 
+			payload, err := json.Marshal(dtos.ToEventResponseDto(event))
+			if err == nil {
+				if err := uc.publisher.Publish(context.Background(), EventsChannel, payload); err != nil {
+					log.Printf("failed to publish event to redis: %v", err)
+				}
+			}
+
 			accepted++
 		}(req)
 	}
@@ -64,6 +79,10 @@ func (uc *EventUsecase) Ingest(requests []*dtos.EventIngestRequestDto, userID st
 
 func (uc *EventUsecase) List(userID string) []*domain.Event {
 	return uc.repo.FindAll(userID)
+}
+
+func (uc *EventUsecase) Subscribe(ctx context.Context) (<-chan []byte, func(), error) {
+	return uc.publisher.Subscribe(ctx, EventsChannel)
 }
 
 func buildEvent(req *dtos.EventIngestRequestDto, userID string) (*domain.Event, error) {

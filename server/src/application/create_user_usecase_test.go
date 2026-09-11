@@ -1,6 +1,7 @@
 package application
 
 import (
+	"log"
 	"strings"
 	"testing"
 	"time"
@@ -12,7 +13,10 @@ import (
 
 func newCreateUserUsecase() (*CreateUserUsecase, *repositories.UserRepository) {
 	repo := repositories.NewUserRepository()
-	jwtSvc := auth.NewJwtService("test-secret", time.Hour*24, time.Hour)
+	jwtSvc, err := auth.NewJwtService("test-secret", time.Hour*24, time.Hour)
+	if err != nil {
+		log.Fatalf("failed to initialize jwt service: %v", err)
+	}
 	return NewCreateUserUsecase(repo, jwtSvc), repo
 }
 

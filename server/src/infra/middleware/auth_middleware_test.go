@@ -25,7 +25,10 @@ func setup(provider *auth.JwtService) *gin.Engine {
 }
 
 func TestAuthValidToken(t *testing.T) {
-	svc := auth.NewJwtService("test-secret", time.Hour, time.Hour)
+	svc, err := auth.NewJwtService("test-secret", time.Hour, time.Hour)
+	if err != nil {
+		t.Fatalf("Error: %v", err)
+	}
 	r := setup(svc)
 
 	tokenString, err := svc.GenerateToken(uuid.New(), "access")
@@ -45,7 +48,10 @@ func TestAuthValidToken(t *testing.T) {
 }
 
 func TestAuthMissingHeader(t *testing.T) {
-	svc := auth.NewJwtService("test-secret", time.Hour, time.Hour)
+	svc, err := auth.NewJwtService("test-secret", time.Hour, time.Hour)
+	if err != nil {
+		t.Fatalf("Error: %v", err)
+	}
 	r := setup(svc)
 
 	req := httptest.NewRequest(http.MethodGet, "/me", nil)
@@ -59,7 +65,10 @@ func TestAuthMissingHeader(t *testing.T) {
 }
 
 func TestAuthMalformedHeader(t *testing.T) {
-	svc := auth.NewJwtService("test-secret", time.Hour, time.Hour)
+	svc, err := auth.NewJwtService("test-secret", time.Hour, time.Hour)
+	if err != nil {
+		t.Fatalf("Error: %v", err)
+	}
 	r := setup(svc)
 
 	req := httptest.NewRequest(http.MethodGet, "/me", nil)
@@ -74,7 +83,10 @@ func TestAuthMalformedHeader(t *testing.T) {
 }
 
 func TestAuthInvalidToken(t *testing.T) {
-	svc := auth.NewJwtService("test-secret", time.Hour, time.Hour)
+	svc, err := auth.NewJwtService("test-secret", time.Hour, time.Hour)
+	if err != nil {
+		t.Fatalf("Error: %v", err)
+	}
 	r := setup(svc)
 
 	req := httptest.NewRequest(http.MethodGet, "/me", nil)

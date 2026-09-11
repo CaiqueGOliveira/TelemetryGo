@@ -20,12 +20,16 @@ func NewJwtService(
 	secret string,
 	refreshExpiration time.Duration,
 	accessExpiration time.Duration,
-) *JwtService {
+) (*JwtService, error) {
+	if len(secret) == 0 {
+		return nil, errors.New("invalid jwt secret")
+	}
+
 	return &JwtService{
 		secret:            []byte(secret),
 		refreshExpiration: refreshExpiration,
 		accessExpiration:  accessExpiration,
-	}
+	}, nil
 }
 
 func (jw *JwtService) GenerateToken(userID uuid.UUID, tokenType string) (string, error) {

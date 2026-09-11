@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"log"
 	"testing"
 	"time"
 
@@ -9,11 +10,16 @@ import (
 )
 
 func newTestService() *JwtService {
-	return NewJwtService(
+	token, err := NewJwtService(
 		"test-secret",
 		time.Hour*24*7,
 		time.Hour/6,
 	)
+	if err != nil {
+		log.Fatalf("failed to initialize jwt service: %v", err)
+	}
+
+	return token
 }
 
 func TestGenerateTokenAccess(t *testing.T) {
@@ -86,7 +92,10 @@ func TestVerifyTokenInvalid(t *testing.T) {
 
 func TestVerifyTokenWrongSecret(t *testing.T) {
 	svc := newTestService()
-	other := NewJwtService("other-secret", time.Hour, time.Hour)
+	other, err := NewJwtService("other-secret", time.Hour, time.Hour)
+	if err != nil {
+		log.Fatalf("failed to initialize jwt service: %v", err)
+	}
 
 	tokenString, err := svc.GenerateToken(uuid.New(), "access")
 	if err != nil {

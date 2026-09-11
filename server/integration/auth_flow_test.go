@@ -3,6 +3,7 @@ package integration
 import (
 	"bytes"
 	"encoding/json"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -12,6 +13,7 @@ import (
 	itf "github.com/CaiqueGOliveira/TelemetryGo/src/application/interfaces"
 	"github.com/CaiqueGOliveira/TelemetryGo/src/controllers"
 	"github.com/CaiqueGOliveira/TelemetryGo/src/infra/auth"
+	"github.com/CaiqueGOliveira/TelemetryGo/src/infra/messaging"
 	"github.com/CaiqueGOliveira/TelemetryGo/src/infra/repositories"
 	"github.com/CaiqueGOliveira/TelemetryGo/src/infra/routes"
 	"github.com/gin-gonic/gin"
@@ -24,7 +26,12 @@ func setupRouter(t *testing.T) *gin.Engine {
 	repo := repositories.NewUserRepository()
 
 	var tokenProvider itf.TokenProvider
-	tokenProvider = auth.NewJwtService("test-secret", time.Hour*24*7, time.Hour/6)
+	tokenProvider, err := auth.NewJwtService("test-secret", time.Hour*24*7, time.Hour/6)
+	if err != nil {
+		log.Fatalf("failed to initialize jwt service: %v", err)
+	}
+
+	eventPublisher := messaging.NewNoOpPublisher()
 
 	createUserUsecase := application.NewCreateUserUsecase(repo, tokenProvider)
 	loginUsecase := application.NewLoginUsecase(tokenProvider, repo)
@@ -32,11 +39,11 @@ func setupRouter(t *testing.T) *gin.Engine {
 	userController := controllers.NewUserController(createUserUsecase, loginUsecase, time.Hour*24*7, tokenProvider)
 
 	eventRepo := repositories.NewInMemoryEventRepository()
-	eventUsecase := application.NewEventUsecase(eventRepo)
+	eventUsecase := application.NewEventUsecase(eventRepo, eventPublisher)
 	eventController := controllers.NewEventController(eventUsecase)
 
 	metricRepo := repositories.NewInMemoryMetricRepository()
-	metricUsecase := application.NewMetricUsecase(metricRepo)
+	metricUsecase := application.NewMetricUsecase(metricRepo, eventPublisher)
 	metricController := controllers.NewMetricController(metricUsecase)
 
 	return routes.SetupRouter(userController, eventController, metricController, tokenProvider, repo)

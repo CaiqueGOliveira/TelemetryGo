@@ -1,22 +1,30 @@
 package application
 
 import (
+	"context"
+	"encoding/json"
+	"log"
 	"sync"
 	"time"
 
 	"github.com/CaiqueGOliveira/TelemetryGo/src/application/dtos"
 	"github.com/CaiqueGOliveira/TelemetryGo/src/domain"
+	"github.com/CaiqueGOliveira/TelemetryGo/src/domain/messages"
 	r "github.com/CaiqueGOliveira/TelemetryGo/src/domain/repository"
 	"github.com/google/uuid"
 )
 
+const MetricsChannel = "telemetry:metrics"
+
 type MetricUsecase struct {
-	repo r.MetricRepository
+	repo      r.MetricRepository
+	publisher messages.EventPublisher
 }
 
-func NewMetricUsecase(repo r.MetricRepository) *MetricUsecase {
+func NewMetricUsecase(repo r.MetricRepository, publisher messages.EventPublisher) *MetricUsecase {
 	return &MetricUsecase{
-		repo: repo,
+		repo:      repo,
+		publisher: publisher,
 	}
 }
 
@@ -49,6 +57,13 @@ func (uc *MetricUsecase) Ingest(requests []*dtos.MetricIngestRequestDto, userID 
 				return
 			}
 
+			payload, err := json.Marshal(dtos.ToMetricResponseDto(metric))
+			if err == nil {
+				if err := uc.publisher.Publish(context.Background(), MetricsChannel, payload); err != nil {
+					log.Printf("failed to publish metric to redis: %v", err)
+				}
+			}
+
 			accepted++
 		}(req)
 	}
@@ -64,6 +79,10 @@ func (uc *MetricUsecase) Ingest(requests []*dtos.MetricIngestRequestDto, userID 
 
 func (uc *MetricUsecase) List(userID string) []*domain.Metric {
 	return uc.repo.FindAll(userID)
+}
+
+func (uc *MetricUsecase) Subscribe(ctx context.Context) (<-chan []byte, func(), error) {
+	return uc.publisher.Subscribe(ctx, MetricsChannel)
 }
 
 func buildMetric(req *dtos.MetricIngestRequestDto, userID string) (*domain.Metric, error) {

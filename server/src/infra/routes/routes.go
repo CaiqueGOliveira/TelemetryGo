@@ -41,7 +41,9 @@ func SetupRouter(userController *controllers.UserController, eventController *co
 				c.JSON(http.StatusOK, gin.H{"claims": claims})
 			})
 			protected.GET("/events", eventController.List)
+			protected.GET("/events/stream", eventController.Stream)
 			protected.GET("/metrics", metricController.List)
+			protected.GET("/metrics/stream", metricController.Stream)
 		}
 	}
 
