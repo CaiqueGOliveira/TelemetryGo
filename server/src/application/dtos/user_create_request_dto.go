@@ -1,9 +1,9 @@
 package dtos
 
 type UserCreateRequestDto struct {
-	Name     string
-	Email    string
-	Password string
+	Name     string `json:"name" binding:"required"`
+	Email    string `json:"email" binding:"required"`
+	Password string `json:"password" binding:"required"`
 }
 
 func NewUserCreateRequestDto(name string, email string, password string) *UserCreateRequestDto {

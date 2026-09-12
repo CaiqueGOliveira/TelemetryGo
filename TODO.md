@@ -8,12 +8,10 @@ Checklist de itens pendentes para o projeto ficar completo.
 
 ### Segurança
 
-- [ ] Corrigir `bootstrap.go:70-72` — `log.Fatalf` no erro de JWT (bloco vazio no momento)
-- [ ] Adicionar validação de `JWT_SECRET` no `.env.example`
-- [ ] Adicionar `binding:"required"` em todos os request DTOs (`user_create_request_dto.go`, `login_request_dto.go`)
-- [ ] Adicionar JSON tags nos DTOs (`user_create_request_dto.go`, `login_request_dto.go`) — campos não são populados corretamente pelo `ShouldBindJSON`
-- [ ] Adicionar limites de batch size nos endpoints de ingest (ex: max 500 events por request)
-- [ ] Adicionar middleware de CORS (`gin-contrib/cors`)
+- [X] Corrigir `bootstrap.go:70-72` — `log.Fatalf` no erro de JWT (bloco vazio no momento)
+- [X] Adicionar validação de `JWT_SECRET` no `.env.example`
+- [X] Adicionar `binding:"required"` em todos os request DTOs (`user_create_request_dto.go`, `login_request_dto.go`)
+- [X] Adicionar JSON tags nos DTOs (`user_create_request_dto.go`, `login_request_dto.go`) — campos não são populados corretamente pelo `ShouldBindJSON`
 - [ ] Adicionar middleware de rate limiting
 - [ ] Adicionar security headers (X-Content-Type-Options, X-Frame-Options, etc.)
 
