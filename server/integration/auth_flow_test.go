@@ -14,6 +14,7 @@ import (
 	"github.com/CaiqueGOliveira/TelemetryGo/src/controllers"
 	"github.com/CaiqueGOliveira/TelemetryGo/src/infra/auth"
 	"github.com/CaiqueGOliveira/TelemetryGo/src/infra/messaging"
+	"github.com/CaiqueGOliveira/TelemetryGo/src/infra/middleware"
 	"github.com/CaiqueGOliveira/TelemetryGo/src/infra/repositories"
 	"github.com/CaiqueGOliveira/TelemetryGo/src/infra/routes"
 	"github.com/gin-gonic/gin"
@@ -46,7 +47,9 @@ func setupRouter(t *testing.T) *gin.Engine {
 	metricUsecase := application.NewMetricUsecase(metricRepo, eventPublisher)
 	metricController := controllers.NewMetricController(metricUsecase)
 
-	return routes.SetupRouter(userController, eventController, metricController, tokenProvider, repo)
+	highLimit := middleware.RateLimitConfig{RPS: 100000, Burst: 100000}
+
+	return routes.SetupRouter(userController, eventController, metricController, tokenProvider, repo, highLimit, highLimit)
 }
 
 func createUserAndGetApiKeyWithEmail(t *testing.T, r *gin.Engine, email string) string {

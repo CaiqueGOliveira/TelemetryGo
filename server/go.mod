@@ -10,6 +10,7 @@ require (
 	github.com/redis/go-redis/v9 v9.22.0
 	github.com/scylladb/gocqlx/v2 v2.8.0
 	golang.org/x/crypto v0.55.0
+	golang.org/x/time v0.16.0
 	gorm.io/driver/postgres v1.6.2
 	gorm.io/gorm v1.31.2
 )

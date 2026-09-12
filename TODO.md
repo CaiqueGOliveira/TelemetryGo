@@ -12,8 +12,8 @@ Checklist de itens pendentes para o projeto ficar completo.
 - [X] Adicionar validação de `JWT_SECRET` no `.env.example`
 - [X] Adicionar `binding:"required"` em todos os request DTOs (`user_create_request_dto.go`, `login_request_dto.go`)
 - [X] Adicionar JSON tags nos DTOs (`user_create_request_dto.go`, `login_request_dto.go`) — campos não são populados corretamente pelo `ShouldBindJSON`
-- [ ] Adicionar middleware de rate limiting
-- [ ] Adicionar security headers (X-Content-Type-Options, X-Frame-Options, etc.)
+- [X] Adicionar middleware de rate limiting
+- [X] Adicionar security headers (X-Content-Type-Options, X-Frame-Options, etc.)
 
 ### API
 

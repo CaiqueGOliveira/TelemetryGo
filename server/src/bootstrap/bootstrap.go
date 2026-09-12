@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/CaiqueGOliveira/TelemetryGo/src/infra/auth"
 	"github.com/CaiqueGOliveira/TelemetryGo/src/infra/database"
 	"github.com/CaiqueGOliveira/TelemetryGo/src/infra/messaging"
+	"github.com/CaiqueGOliveira/TelemetryGo/src/infra/middleware"
 	"github.com/CaiqueGOliveira/TelemetryGo/src/infra/repositories"
 	"github.com/CaiqueGOliveira/TelemetryGo/src/infra/routes"
 	"github.com/gin-gonic/gin"
@@ -82,9 +84,36 @@ func AppBootstrap() *gin.Engine {
 	metricUsecase := application.NewMetricUsecase(metricRepo, eventPublisher)
 	metricController := controllers.NewMetricController(metricUsecase)
 
-	router := routes.SetupRouter(userController, eventController, metricController, jwtProvider, userRepo)
+	authRateLimit := middleware.RateLimitConfig{
+		RPS:   envFloatOr("RATE_LIMIT_RPS", 10),
+		Burst: envIntOr("RATE_LIMIT_BURST", 30),
+	}
+	ingestRateLimit := middleware.RateLimitConfig{
+		RPS:   envFloatOr("INGEST_RATE_LIMIT_RPS", 1000),
+		Burst: envIntOr("INGEST_RATE_LIMIT_BURST", 10000),
+	}
+
+	router := routes.SetupRouter(userController, eventController, metricController, jwtProvider, userRepo, authRateLimit, ingestRateLimit)
 
 	return router
+}
+
+func envFloatOr(key string, def float64) float64 {
+	if v := os.Getenv(key); v != "" {
+		if f, err := strconv.ParseFloat(v, 64); err == nil {
+			return f
+		}
+	}
+	return def
+}
+
+func envIntOr(key string, def int) int {
+	if v := os.Getenv(key); v != "" {
+		if i, err := strconv.Atoi(v); err == nil {
+			return i
+		}
+	}
+	return def
 }
 
 type inMemoryPublisher struct{}

@@ -10,8 +10,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRouter(userController *controllers.UserController, eventController *controllers.EventController, metricController *controllers.MetricController, tokenProvider t.TokenProvider, userRepo r.UserRepository) *gin.Engine {
+func SetupRouter(userController *controllers.UserController, eventController *controllers.EventController, metricController *controllers.MetricController, tokenProvider t.TokenProvider, userRepo r.UserRepository, authRateLimit middleware.RateLimitConfig, ingestRateLimit middleware.RateLimitConfig) *gin.Engine {
 	r := gin.Default()
+	r.Use(middleware.SecurityHeaders())
 
 	api := r.Group("/api/v1")
 	{
@@ -21,20 +22,20 @@ func SetupRouter(userController *controllers.UserController, eventController *co
 			})
 		})
 
-		api.POST("/users", userController.CreateUser)
-		api.POST("/login", userController.Login)
-		api.POST("/auth/refresh", userController.RefreshToken)
-		api.POST("/auth/logout", userController.Logout)
+		api.POST("/users", middleware.RateLimitMiddleware(authRateLimit.RPS, authRateLimit.Burst), userController.CreateUser)
+		api.POST("/login", middleware.RateLimitMiddleware(authRateLimit.RPS, authRateLimit.Burst), userController.Login)
+		api.POST("/auth/refresh", middleware.RateLimitMiddleware(authRateLimit.RPS, authRateLimit.Burst), userController.RefreshToken)
+		api.POST("/auth/logout", middleware.RateLimitMiddleware(authRateLimit.RPS, authRateLimit.Burst), userController.Logout)
 
 		ingest := api.Group("")
-		ingest.Use(middleware.AuthApiKeyMiddleware(userRepo))
+		ingest.Use(middleware.AuthApiKeyMiddleware(userRepo), middleware.RateLimitMiddleware(ingestRateLimit.RPS, ingestRateLimit.Burst))
 		{
 			ingest.POST("/events", eventController.Ingest)
 			ingest.POST("/metrics", metricController.Ingest)
 		}
 
 		protected := api.Group("")
-		protected.Use(middleware.Auth(tokenProvider))
+		protected.Use(middleware.Auth(tokenProvider), middleware.RateLimitMiddleware(authRateLimit.RPS, authRateLimit.Burst))
 		{
 			protected.GET("/me", func(c *gin.Context) {
 				claims := c.MustGet("claims")
