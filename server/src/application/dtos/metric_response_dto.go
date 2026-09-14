@@ -3,18 +3,18 @@ package dtos
 import "github.com/CaiqueGOliveira/TelemetryGo/src/domain"
 
 type MetricResponseDto struct {
-	Id        string `json:"id"`
-	Name      string `json:"name"`
-	Service   string `json:"service"`
-	Value     string `json:"value"`
-	Unit      string `json:"unit"`
-	Status    string `json:"status"`
-	Timestamp string `json:"timestamp"`
+	Id        string  `json:"id"`
+	Name      string  `json:"name"`
+	Service   string  `json:"service"`
+	Value     float64 `json:"value"`
+	Unit      string  `json:"unit"`
+	Status    string  `json:"status"`
+	Timestamp string  `json:"timestamp"`
 }
 
 func ToMetricResponseDto(metric *domain.Metric) MetricResponseDto {
 	return MetricResponseDto{
-		Id:        metric.Id,
+		Id:        metric.Id.String(),
 		Name:      metric.Name,
 		Service:   metric.Service,
 		Value:     metric.Value,

@@ -24,7 +24,7 @@ func SetupCassandra(session gocqlx.Session) error {
 			id         text,
 			name       text,
 			service    text,
-			value      text,
+			value      double,
 			unit       text,
 			status     text,
 			timestamp  timestamp,

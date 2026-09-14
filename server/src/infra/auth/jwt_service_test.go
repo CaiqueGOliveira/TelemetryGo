@@ -82,6 +82,30 @@ func TestGenerateTokenUnknownType(t *testing.T) {
 	}
 }
 
+func TestGenerateResetToken(t *testing.T) {
+	svc := newTestService()
+	userID := uuid.New()
+
+	tokenString, err := svc.GenerateResetToken(userID, 30*time.Minute)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	claims, err := svc.VerifyToken(tokenString)
+	if err != nil {
+		t.Fatalf("unexpected verify error: %v", err)
+	}
+
+	if typ := claims["typ"]; typ != "reset-password" {
+		t.Errorf("expected typ reset-password, got %v", typ)
+	}
+
+	sub, _ := claims["sub"].(string)
+	if sub != userID.String() {
+		t.Errorf("expected sub %s, got %s", userID.String(), sub)
+	}
+}
+
 func TestVerifyTokenInvalid(t *testing.T) {
 	svc := newTestService()
 

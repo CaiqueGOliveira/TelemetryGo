@@ -22,7 +22,7 @@ func NewCreateUserUsecase(repo r.UserRepository, token t.TokenProvider) *CreateU
 }
 
 func (uc *CreateUserUsecase) Execute(req *dtos.UserCreateRequestDto) (*dtos.UserCreateResponseDto, error) {
-	user, err := (&domain.User{}).CreateUser(req.Email, req.Name, req.Password)
+	user, err := domain.CreateUser(req.Email, req.Name, req.Password)
 	if err != nil {
 		return nil, err
 	}

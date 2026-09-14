@@ -102,6 +102,34 @@ func TestEventIngestInvalidSeverity(t *testing.T) {
 	}
 }
 
+func TestEventIngestInvalidTimestamp(t *testing.T) {
+	r := setupRouter(t)
+	apiKey := createUserAndGetApiKey(t, r)
+
+	events := []map[string]string{
+		{"type": "deploy", "service": "api-gateway", "message": "msg", "severity": "info", "timestamp": "not-a-timestamp"},
+	}
+
+	resp := doJSON(t, r, http.MethodPost, "/api/v1/events", events, apiKey)
+	if resp.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 on invalid timestamp, got %d: %s", resp.Code, resp.Body.String())
+	}
+}
+
+func TestEventIngestMissingField(t *testing.T) {
+	r := setupRouter(t)
+	apiKey := createUserAndGetApiKey(t, r)
+
+	events := []map[string]string{
+		{"type": "deploy", "service": "api-gateway", "severity": "info"},
+	}
+
+	resp := doJSON(t, r, http.MethodPost, "/api/v1/events", events, apiKey)
+	if resp.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 on missing message, got %d: %s", resp.Code, resp.Body.String())
+	}
+}
+
 func TestEventIngestWithoutApiKey(t *testing.T) {
 	r := setupRouter(t)
 

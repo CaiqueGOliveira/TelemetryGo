@@ -160,7 +160,6 @@ Every data query is scoped to `user_id`, injected into the request context by au
 
 ---
 
-
 ## Getting Started
 
 ### Prerequisites

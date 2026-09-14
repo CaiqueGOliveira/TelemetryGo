@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Card,
   CardContent,
@@ -12,11 +12,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuthStore } from "@/stores/auth-store";
-import { Check, Copy, KeyRound } from "lucide-react";
+import { Check, Copy, KeyRound, UserRound } from "lucide-react";
 
 export default function SettingsPage() {
+  const user = useAuthStore((s) => s.user);
   const apiKey = useAuthStore((s) => s.apiKey);
+  const accessToken = useAuthStore((s) => s.accessToken);
+  const fetchUser = useAuthStore((s) => s.fetchUser);
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (accessToken && !user) {
+      fetchUser();
+    }
+  }, [accessToken, user, fetchUser]);
 
   async function copyApiKey() {
     if (!apiKey) return;
@@ -33,6 +42,30 @@ export default function SettingsPage() {
           Gerencie sua conta e preferências
         </p>
       </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <UserRound className="size-4" />
+            Perfil
+          </CardTitle>
+          <CardDescription>Dados da sua conta.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">Nome</Label>
+            <Input id="name" readOnly value={user?.name ?? ""} placeholder="Carregando..." />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              readOnly
+              value={user?.email ?? ""}
+              placeholder="Carregando..."
+            />
+          </div>
+        </CardContent>
+      </Card>
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">

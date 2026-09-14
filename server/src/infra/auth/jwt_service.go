@@ -52,8 +52,26 @@ func (jw *JwtService) GenerateToken(userID uuid.UUID, tokenType string) (string,
 			"typ": tokenType,
 		})
 	default:
-		return "", fmt.Errorf("unknowm token type: %s", tokenType)
+		return "", fmt.Errorf("unknown token type: %s", tokenType)
 	}
+
+	tokenString, err := token.SignedString(jw.secret)
+	if err != nil {
+		return "", errors.New("error assigning jwt token")
+	}
+
+	return tokenString, nil
+}
+
+func (jw *JwtService) GenerateResetToken(userID uuid.UUID, expiration time.Duration) (string, error) {
+	now := time.Now()
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"sub": userID,
+		"exp": now.Add(expiration).Unix(),
+		"iat": now.Unix(),
+		"typ": t.TokenTypeReset,
+	})
 
 	tokenString, err := token.SignedString(jw.secret)
 	if err != nil {

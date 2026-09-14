@@ -17,64 +17,69 @@ Checklist de itens pendentes para o projeto ficar completo.
 
 ### API
 
-- [ ] Implementar `/me` corretamente — buscar usuário no banco por ID e retornar dados reais (name, email, api_key)
-- [ ] Criar `FindById` no repository interface e implementações
-- [ ] Criar endpoint `PUT /api/v1/me` — atualizar perfil (nome, email)
-- [ ] Criar endpoint `POST /api/v1/auth/change-password` — verificar senha atual e atualizar
-- [ ] Criar endpoint `POST /api/v1/auth/rotate-api-key` — gerar nova API key
-- [ ] Criar endpoint `DELETE /api/v1/users/me` — deletar conta
-- [ ] Criar `DELETE /api/v1/events/:id` e `DELETE /api/v1/metrics/:id`
-- [ ] Adicionar paginação nos endpoints de listagem (`limit`, `offset` query params)
-- [ ] Adicionar filtros por `severity`, `type`, `service`, time range nos events
-- [ ] Adicionar filtros por `status`, `name`, `service` nos metrics
-- [ ] Adicionar handler 404 customizado (JSON response em vez do HTML default do Gin)
+- [X] Implementar `/me` corretamente — buscar usuário no banco por ID e retornar dados reais (name, email, api_key)
+- [X] Criar `FindById` no repository interface e implementações
+- [x] Criar endpoint `PUT /api/v1/me` — atualizar perfil (nome, email)
+- [x] Criar endpoint `POST /api/v1/auth/change-password` — verificar senha atual e atualizar
+- [x] Criar endpoint `POST /api/v1/auth/rotate-api-key` — gerar nova API key
+- [x] Criar endpoint `DELETE /api/v1/users/me` — deletar conta
+- [x] Criar endpoint `POST /api/v1/auth/forgot-password` — solicitar redefinição de senha (retorna reset_token no body para demo)
+- [x] Criar endpoint `POST /api/v1/auth/reset-password` — redefinir senha usando token JWT
+- [x] Criar `DELETE /api/v1/events/:id` e `DELETE /api/v1/metrics/:id`
+- [x] Adicionar paginação nos endpoints de listagem (`limit`, `offset` query params)
+- [x] Adicionar filtros por `severity`, `type`, `service`, time range nos events
+- [x] Adicionar filtros por `status`, `name`, `service` nos metrics
+- [x] Adicionar handler 404 customizado (JSON response em vez do HTML default do Gin)
 
 ### Validação e Error Handling
 
-- [ ] Cassandra `FindAll` deve retornar erro ao client em vez de slice vazio silencioso
-- [ ] Event/Metric list controllers precisam propagar erros do repositório
-- [ ] Publish errors não devem ser ignorados — retornar erro ou incluir no response
-- [ ] Timestamps inválidos devem retornar erro ao client em vez de fallback para `time.Now()`
-- [ ] Tratar erro de email duplicado na criação de usuário com mensagem amigável
-- [ ] Corrigir typo `"unknowm"` → `"unknown"` em `jwt_service.go:55`
-- [ ] In-memory user repository precisa de `sync.Mutex` para thread safety
-- [ ] Adicionar validação de `service`, `message`, `type`, `name`, `value` nos DTOs de ingest
-- [ ] Adicionar validação de que `Metric.Value` é numérico
+- [X] Cassandra `FindAll` deve retornar erro ao client em vez de slice vazio silencioso
+- [X] Event/Metric list controllers precisam propagar erros do repositório
+- [X] Publish errors não devem ser ignorados — retornar erro ou incluir no response
+- [X] Timestamps inválidos devem retornar erro ao client em vez de fallback para `time.Now()`
+- [X] Tratar erro de email duplicado na criação de usuário com mensagem amigável
+- [X] Corrigir typo `"unknowm"` → `"unknown"` em `jwt_service.go:55`
+- [X] In-memory user repository precisa de `sync.Mutex` para thread safety
+- [X] Adicionar validação de `service`, `message`, `type`, `name`, `value` nos DTOs de ingest
+- [X] Adicionar validação de que `Metric.Value` é numérico
 
 ### Code Quality
 
-- [ ] Consistência de tipos: `Event.Id` e `Metric.Id` devem ser `uuid.UUID` em vez de `string`
-- [ ] `Metric.Value` deve ser `float64` em vez de `string`
-- [ ] Consolidar `NewUser()` e `CreateUser()` — `CreateUser` deve chamar `NewUser(uuid.New(), ...)`
-- [ ] Remover import duplicado em `user_repository_i.go` (alias `vo` desnecessário)
-- [ ] Mensagens de validação de senha em inglês (consistente com o resto do código)
-- [ ] Parâmetros hardcoded (port, DB pool, token expiration, argon2 params) → mover para env/config
-- [ ] Adicionar graceful shutdown (signal handling + `http.Server.Shutdown`)
-- [ ] Usar `slog` ou `zerolog` em vez de `log.Println` puro
-- [ ] Health check deve verificar conectividade de Postgres, Cassandra e Redis
+- [X] Consistência de tipos: `Event.Id` e `Metric.Id` devem ser `uuid.UUID` em vez de `string`
+- [X] `Metric.Value` deve ser `float64` em vez de `string`
+- [X] Consolidar `NewUser()` e `CreateUser()` — `CreateUser` deve chamar `NewUser(uuid.New(), ...)`
+- [X] Remover import duplicado em `user_repository_i.go` (alias `vo` desnecessário)
+- [X] Mensagens de validação de senha em inglês (consistente com o resto do código)
+- [X] Parâmetros hardcoded (port, DB pool, token expiration, argon2 params) → mover para env/config
+- [X] Adicionar graceful shutdown (signal handling + `http.Server.Shutdown`)
+- [X] Usar `slog` ou `zerolog` em vez de `log.Println` puro
+- [X] Health check deve verificar conectividade de Postgres, Cassandra e Redis
 
 ### Infraestrutura
 
-- [ ] Criar `Dockerfile` de produção (multi-stage com `CGO_ENABLED=0`)
-- [ ] Criar `docker-compose.prod.yml` para deploy
-- [ ] Criar `.env.example` documentando todas as variáveis
-- [ ] Criar `.golangci.yml` com configuração de linter
-- [ ] Criar `Makefile` ou task runner para comandos comuns (run, test, lint, build)
+- [x] Criar `Dockerfile` de produção (multi-stage com `CGO_ENABLED=0`)
+- [x] Criar `docker-compose.prod.yml` para deploy
+- [X] Criar `.env.example` documentando todas as variáveis
+- [x] Criar `.golangci.yml` com configuração de linter
+- [x] Criar `Makefile` ou task runner para comandos comuns (run, test, lint, build)
 
 ### Testes
 
-- [ ] Unit tests para `EventUsecase` (Ingest, List, Subscribe)
-- [ ] Unit tests para `MetricUsecase` (Ingest, List, Subscribe)
-- [ ] Unit tests para `UserController`, `EventController`, `MetricController`
-- [ ] Unit tests para domain entities e value objects (`Email`, `Severity`, `MetricStatus`)
-- [ ] Unit tests para `RedisPublisher`
-- [ ] Unit tests para `PostgresUserRepository`
-- [ ] Unit tests para `CassandraEventRepository` e `CassandraMetricRepository`
-- [ ] Unit tests para in-memory repositories
-- [ ] Teste de SSE streaming (`/events/stream`, `/metrics/stream`)
-- [ ] Teste de health check com dependências indisponíveis
-- [ ] Teste de criação de usuário com email duplicado
-- [ ] Compile-time interface assertions para in-memory repositories
+- [x] Unit tests para `EventUsecase` (Ingest, List, Subscribe)
+- [x] Unit tests para `MetricUsecase` (Ingest, List, Subscribe)
+- [x] Unit tests para `UserController`, `EventController`, `MetricController`
+- [x] Unit tests para domain entities e value objects (`Email`, `Severity`, `MetricStatus`)
+- [x] Unit tests para `RedisPublisher`
+- [x] Unit tests para `PostgresUserRepository`
+- [x] Unit tests para `CassandraEventRepository` e `CassandraMetricRepository`
+- [x] Unit tests para in-memory repositories
+- [x] Teste de SSE streaming (`/events/stream`, `/metrics/stream`)
+- [x] Teste de health check com dependências indisponíveis
+- [X] Teste de criação de usuário com email duplicado
+- [x] Compile-time interface assertions para in-memory repositories
+- [x] Testes de fluxo forgot-password / reset-password (usecases, controller, integração)
+- [x] Teste de forgot-password com email inexistente (não revela se existe)
+- [x] Teste de reset com token inválido/expirado e senha fraca
 
 ---
 
@@ -82,42 +87,42 @@ Checklist de itens pendentes para o projeto ficar completo.
 
 ### Funcional
 
-- [ ] Conectar `loadOverview()`, `loadMetrics()`, `loadEvents()` no dashboard — chamar nos `useEffect`
-- [ ] Criar `middleware.ts` para proteger rotas `/dashboard` (redirecionar para `/login` se não autenticado)
-- [ ] Persistir auth state (accessToken, user, apiKey) em localStorage/cookie
-- [ ] Criar ação `fetchUser` no auth-store para rehidratar state no page load
-- [ ] Implementar login error feedback — conectar o Alert que está permanentemente `hidden`
-- [ ] Implementar página de events com dados reais da API
-- [ ] Implementar página de metrics com dados reais da API
-- [ ] Implementar forgot-password — conectar ao backend (precisa do endpoint no backend primeiro)
-- [ ] Implementar reset-password — conectar ao backend (precisa do endpoint no backend primeiro)
-- [ ] Implementar settings page — form de perfil, change password, mostrar/rotacionar API key
+- [x] Conectar `loadOverview()`, `loadMetrics()`, `loadEvents()` no dashboard — chamar nos `useEffect`
+- [x] Criar `middleware.ts`/`proxy.ts` para proteger rotas `/dashboard` (redirecionar para `/login` se não autenticado)
+- [x] Persistir auth state (accessToken, user, apiKey) em localStorage/cookie
+- [x] Criar ação `fetchUser` no auth-store para rehidratar state no page load
+- [x] Implementar login error feedback — conectar o Alert que está permanentemente `hidden`
+- [x] Implementar página de events com dados reais da API
+- [x] Implementar página de metrics com dados reais da API
+- [x] Implementar forgot-password — conectar ao backend
+- [x] Implementar reset-password — conectar ao backend
+- [x] Implementar settings page — mostrar perfil e API key (fica pendente: change password e rotacionar API key precisam de endpoints no backend)
 
 ### UX / Design
 
-- [ ] Sidebar deve destacar a rota ativa — usar `usePathname()` em vez de `isActive` hardcoded
-- [ ] Adicionar loading skeletons nas páginas do dashboard
-- [ ] Adicionar scroll horizontal na tabela de métricas (`overflow-x-auto`)
-- [ ] Sidebar mobile deve fechar após navegação
-- [ ] Definir chart tokens (`--chart-1` a `--chart-5`) com cores reais em vez de monochrome
-- [ ] Usar design tokens para cores de tendência em vez de `text-emerald-500`/`text-amber-500` hardcoded
-- [ ] Adicionar espaço entre valor e unidade de métrica ("42 ms" em vez de "42ms")
-- [ ] Criar página `not-found.tsx` customizada
-- [ ] Criar `error.tsx` para error boundary no dashboard
-- [ ] Criar `loading.tsx` para loading states por rota
+- [x] Sidebar deve destacar a rota ativa — usar `usePathname()` em vez de `isActive` hardcoded
+- [x] Adicionar loading skeletons nas páginas do dashboard
+- [x] Adicionar scroll horizontal na tabela de métricas (`overflow-x-auto`)
+- [x] Sidebar mobile deve fechar após navegação
+- [x] Definir chart tokens (`--chart-1` a `--chart-5`) com cores reais em vez de monochrome
+- [x] Usar design tokens para cores de tendência em vez de `text-emerald-500`/`text-amber-500` hardcoded
+- [x] Adicionar espaço entre valor e unidade de métrica ("42 ms" em vez de "42ms")
+- [x] Criar página `not-found.tsx` customizada
+- [x] Criar `error.tsx` para error boundary no dashboard
+- [x] Criar `loading.tsx` para loading states por rota
 
 ### Acessibilidade
 
-- [ ] Adicionar `aria-label` nos forms (login, register, forgot-password, reset-password)
-- [ ] Adicionar `aria-current="page"` nos links do sidebar para a rota ativa
-- [ ] Adicionar `aria-label` no trigger do dropdown do usuário
-- [ ] Adicionar `<caption>` ou `aria-label` na tabela de métricas
+- [x] Adicionar `aria-label` nos forms (login, register, forgot-password, reset-password)
+- [x] Adicionar `aria-current="page"` nos links do sidebar para a rota ativa
+- [x] Adicionar `aria-label` no trigger do dropdown do usuário
+- [x] Adicionar `<caption>` ou `aria-label` na tabela de métricas
 
 ### Limpeza
 
-- [ ] Remover `useAxios()` hook se não será usado (ou substituir o singleton `api`)
-- [ ] Remover componentes não utilizados: `Tabs`, `Textarea`, `Select`
-- [ ] Remover `js-cookie` do `package.json` se não será usado
-- [ ] Remover `console.log("reset token")` da página de reset-password
-- [ ] Remover/reativar o Alert oculto no login
-- [ ] Definir o que fazer com `setApiKey` — usar ou remover do store
+- [x] Remover `useAxios()` hook se não será usado (ou substituir o singleton `api`)
+- [x] Remover componentes não utilizados: `Tabs`, `Textarea`, `Select`
+- [x] Remover `js-cookie` do `package.json` se não será usado
+- [x] Remover `console.log("reset token")` da página de reset-password
+- [x] Remover/reativar o Alert oculto no login
+- [x] Definir o que fazer com `setApiKey` — usar ou remover do store

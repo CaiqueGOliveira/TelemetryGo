@@ -13,7 +13,7 @@ type EventResponseDto struct {
 
 func ToEventResponseDto(event *domain.Event) EventResponseDto {
 	return EventResponseDto{
-		Id:        event.Id,
+		Id:        event.Id.String(),
 		Type:      event.Type,
 		Service:   event.Service,
 		Message:   event.Message,

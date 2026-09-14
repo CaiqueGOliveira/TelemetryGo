@@ -1,4 +1,4 @@
-﻿package valueobjects
+package valueobjects
 
 import (
 	"crypto/rand"
@@ -121,22 +121,22 @@ func (h *PasswordHashed) validatePassword(text string) []string {
 
 	length := len([]byte(text))
 	if length < 8 {
-		messages = append(messages, "A senha deve ter pelo menos 8 caracteres.")
+		messages = append(messages, "the password must be at least 8 characters long")
 	}
 	if length > 64 {
-		messages = append(messages, "A senha deve ter no máximo 64 caracteres.")
+		messages = append(messages, "the password must be at most 64 characters long")
 	}
 
 	if !lowercaseRegex.MatchString(text) {
-		messages = append(messages, "A senha deve conter pelo menos 1 letra minúscula.")
+		messages = append(messages, "the password must contain at least 1 lowercase letter")
 	}
 
 	if !uppercaseRegex.MatchString(text) {
-		messages = append(messages, "A senha deve conter pelo menos 1 letra maiúscula.")
+		messages = append(messages, "the password must contain at least 1 uppercase letter")
 	}
 
 	if !specialRegex.MatchString(text) {
-		messages = append(messages, "A senha deve conter pelo menos 1 caractere especial.")
+		messages = append(messages, "the password must contain at least 1 special character")
 	}
 
 	return messages

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -15,6 +16,7 @@ export default function LoginPage() {
   const router = useRouter();
   const login = useAuthStore((s) => s.login);
   const isLoading = useAuthStore((s) => s.isLoading);
+  const [error, setError] = useState<string | null>(null);
 
   const {
     register,
@@ -25,11 +27,12 @@ export default function LoginPage() {
   });
 
   async function onSubmit(data: LoginFormData) {
+    setError(null);
     try {
       await login(data);
       router.push("/dashboard");
     } catch {
-      // erro tratado abaixo via estado? mantemos simples
+      setError("Email ou senha inválidos. Tente novamente.");
     }
   }
 
@@ -49,6 +52,8 @@ export default function LoginPage() {
             id="email"
             type="email"
             placeholder="voce@exemplo.com"
+            aria-label="Email"
+            autoComplete="email"
             {...register("email")}
           />
           {errors.email && (
@@ -62,6 +67,8 @@ export default function LoginPage() {
             id="password"
             type="password"
             placeholder="••••••••"
+            aria-label="Senha"
+            autoComplete="current-password"
             {...register("password")}
           />
           {errors.password && (
@@ -69,11 +76,11 @@ export default function LoginPage() {
           )}
         </div>
 
-        <Alert variant="destructive" className="hidden">
-          <AlertDescription>
-            Email ou senha inválidos.
-          </AlertDescription>
-        </Alert>
+        {error && (
+          <Alert variant="destructive" role="alert">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
         <Button type="submit" className="w-full" disabled={isLoading}>
           {isLoading ? "Entrando..." : "Entrar"}

@@ -3,7 +3,9 @@ package application
 import (
 	"context"
 	"encoding/json"
-	"log"
+	"fmt"
+	"log/slog"
+	"strconv"
 	"sync"
 	"time"
 
@@ -28,10 +30,11 @@ func NewMetricUsecase(repo r.MetricRepository, publisher messages.EventPublisher
 	}
 }
 
-func (uc *MetricUsecase) Ingest(requests []*dtos.MetricIngestRequestDto, userID string) (int, error) {
+func (uc *MetricUsecase) Ingest(requests []*dtos.MetricIngestRequestDto, userID string) (int, int, error) {
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 	var accepted int
+	var published int
 	var firstErr error
 
 	for _, req := range requests {
@@ -57,28 +60,38 @@ func (uc *MetricUsecase) Ingest(requests []*dtos.MetricIngestRequestDto, userID 
 				return
 			}
 
+			accepted++
+
 			payload, err := json.Marshal(dtos.ToMetricResponseDto(metric))
-			if err == nil {
-				if err := uc.publisher.Publish(context.Background(), MetricsChannel, payload); err != nil {
-					log.Printf("failed to publish metric to redis: %v", err)
-				}
+			if err != nil {
+				slog.Error("failed to marshal metric for publish", "metric_id", metric.Id, "error", err)
+				return
 			}
 
-			accepted++
+			if err := uc.publisher.Publish(context.Background(), MetricsChannel, payload); err != nil {
+				slog.Error("failed to publish metric", "channel", MetricsChannel, "error", err)
+				return
+			}
+
+			published++
 		}(req)
 	}
 
 	wg.Wait()
 
 	if firstErr != nil {
-		return 0, firstErr
+		return 0, 0, firstErr
 	}
 
-	return accepted, nil
+	return accepted, published, nil
 }
 
-func (uc *MetricUsecase) List(userID string) []*domain.Metric {
-	return uc.repo.FindAll(userID)
+func (uc *MetricUsecase) List(userID string, filter r.MetricFilter, limit int, offset int) ([]*domain.Metric, error) {
+	return uc.repo.List(userID, filter, limit, offset)
+}
+
+func (uc *MetricUsecase) Delete(userID string, id uuid.UUID) error {
+	return uc.repo.Delete(userID, id)
 }
 
 func (uc *MetricUsecase) Subscribe(ctx context.Context) (<-chan []byte, func(), error) {
@@ -86,29 +99,38 @@ func (uc *MetricUsecase) Subscribe(ctx context.Context) (<-chan []byte, func(), 
 }
 
 func buildMetric(req *dtos.MetricIngestRequestDto, userID string) (*domain.Metric, error) {
-	id := req.ID
-	if id == "" {
-		id = uuid.NewString()
+	id := uuid.New()
+	if req.ID != "" {
+		parsedID, err := uuid.Parse(req.ID)
+		if err != nil {
+			return nil, fmt.Errorf("invalid metric id: %w", err)
+		}
+		id = parsedID
 	}
 
-	name := req.Name
-	if name == "" {
-		name = "metric"
+	if err := validateRequiredMetricFields(req); err != nil {
+		return nil, err
+	}
+
+	value, err := strconv.ParseFloat(req.Value, 64)
+	if err != nil {
+		return nil, fmt.Errorf("invalid metric value %q: numeric value required", req.Value)
 	}
 
 	timestamp := time.Now()
 	if req.Timestamp != "" {
 		parsed, err := time.Parse(time.RFC3339, req.Timestamp)
-		if err == nil {
-			timestamp = parsed
+		if err != nil {
+			return nil, fmt.Errorf("invalid metric timestamp: %w", err)
 		}
+		timestamp = parsed
 	}
 
 	metric, err := domain.NewMetric(
 		id,
-		name,
+		req.Name,
 		req.Service,
-		req.Value,
+		value,
 		req.Unit,
 		req.Status,
 		timestamp,
@@ -119,4 +141,17 @@ func buildMetric(req *dtos.MetricIngestRequestDto, userID string) (*domain.Metri
 
 	metric.UserId = userID
 	return metric, nil
+}
+
+func validateRequiredMetricFields(req *dtos.MetricIngestRequestDto) error {
+	switch {
+	case req.Name == "":
+		return fmt.Errorf("metric name is required")
+	case req.Service == "":
+		return fmt.Errorf("metric service is required")
+	case req.Value == "":
+		return fmt.Errorf("metric value is required")
+	default:
+		return nil
+	}
 }

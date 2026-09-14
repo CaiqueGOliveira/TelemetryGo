@@ -9,13 +9,20 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-func PostgresConnect(dsn string) (*gorm.DB, error) {
+type PoolConfig struct {
+	MaxOpenConns    int
+	MaxIdleConns    int
+	ConnMaxLifetime time.Duration
+}
+
+func PostgresConnect(dsn string, pool PoolConfig) (*gorm.DB, error) {
 	if dsn == "" {
 		return nil, errors.New("dsn is required")
 	}
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Warn),
+		Logger:         logger.Default.LogMode(logger.Warn),
+		TranslateError: true,
 	})
 	if err != nil {
 		return nil, err
@@ -30,9 +37,9 @@ func PostgresConnect(dsn string) (*gorm.DB, error) {
 		return nil, err
 	}
 
-	sqlDB.SetMaxOpenConns(25)
-	sqlDB.SetMaxIdleConns(5)
-	sqlDB.SetConnMaxLifetime(5 * time.Minute)
+	sqlDB.SetMaxOpenConns(pool.MaxOpenConns)
+	sqlDB.SetMaxIdleConns(pool.MaxIdleConns)
+	sqlDB.SetConnMaxLifetime(pool.ConnMaxLifetime)
 
 	return db, nil
 }

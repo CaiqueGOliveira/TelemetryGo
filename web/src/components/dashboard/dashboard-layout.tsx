@@ -10,7 +10,7 @@ import {
   Settings,
   User,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Sidebar,
   SidebarContent,
@@ -25,6 +25,7 @@ import {
   SidebarProvider,
   SidebarRail,
   SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -39,6 +40,42 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuthStore } from "@/stores/auth-store";
 import { ThemeToggle } from "@/components/theme-toggle";
+
+const navItems = [
+  { href: "/dashboard", label: "Visão Geral", icon: LayoutDashboard },
+  { href: "/dashboard/metrics", label: "Métricas", icon: Activity },
+  { href: "/dashboard/events", label: "Eventos", icon: Bell },
+];
+
+function NavLink({
+  href,
+  label,
+  icon: Icon,
+}: {
+  href: string;
+  label: string;
+  icon: typeof Bell;
+}) {
+  const pathname = usePathname();
+  const { setOpenMobile } = useSidebar();
+  const isActive = pathname === href;
+
+  return (
+    <SidebarMenuButton
+      render={
+        <a
+          href={href}
+          aria-current={isActive ? "page" : undefined}
+          onClick={() => setOpenMobile(false)}
+        />
+      }
+      isActive={isActive}
+    >
+      <Icon />
+      <span>{label}</span>
+    </SidebarMenuButton>
+  );
+}
 
 export function AppSidebar() {
   return (
@@ -62,34 +99,18 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupLabel>Navegação</SidebarGroupLabel>
           <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton render={<a href="/dashboard" />} isActive={false}>
-                <LayoutDashboard />
-                <span>Visão Geral</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton render={<a href="/dashboard/metrics" />}>
-                <Activity />
-                <span>Métricas</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton render={<a href="/dashboard/events" />}>
-                <Bell />
-                <span>Eventos</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
+            {navItems.map((item) => (
+              <SidebarMenuItem key={item.href}>
+                <NavLink {...item} />
+              </SidebarMenuItem>
+            ))}
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton render={<a href="/dashboard/settings" />}>
-              <Settings />
-              <span>Configurações</span>
-            </SidebarMenuButton>
+            <NavLink href="/dashboard/settings" label="Configurações" icon={Settings} />
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
@@ -101,7 +122,21 @@ export function AppSidebar() {
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
+  const accessToken = useAuthStore((s) => s.accessToken);
+  const isHydrated = useAuthStore((s) => s.isHydrated);
+  const fetchUser = useAuthStore((s) => s.fetchUser);
   const logout = useAuthStore((s) => s.logout);
+
+  React.useEffect(() => {
+    if (!isHydrated) return;
+    if (!accessToken) {
+      router.replace("/login");
+      return;
+    }
+    if (!user) {
+      fetchUser();
+    }
+  }, [isHydrated, accessToken, user, fetchUser, router]);
 
   return (
     <SidebarProvider>
@@ -113,7 +148,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           <div className="ml-auto flex items-center gap-2">
             <ThemeToggle />
             <DropdownMenu>
-              <DropdownMenuTrigger className="flex size-9 items-center justify-center rounded-full outline-none">
+              <DropdownMenuTrigger
+                aria-label="Menu do usuário"
+                className="flex size-9 items-center justify-center rounded-full outline-none"
+              >
                 <Avatar className="size-8">
                   <AvatarFallback>
                     <User className="size-4" />

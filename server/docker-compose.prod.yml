@@ -1,0 +1,66 @@
+services:
+  telemetrygo:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      SERVER_PORT: "8080"
+      DATABASE_URL: postgres://telemetry:telemetry@postgres:5432/telemetrygo?sslmode=disable
+      CASSANDRA_HOSTS: cassandra:9042
+      REDIS_URL: redis://redis:6379/0
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      RATE_LIMIT_RPS: ${RATE_LIMIT_RPS:-10}
+      RATE_LIMIT_BURST: ${RATE_LIMIT_BURST:-30}
+      INGEST_RATE_LIMIT_RPS: ${INGEST_RATE_LIMIT_RPS:-1000}
+      INGEST_RATE_LIMIT_BURST: ${INGEST_RATE_LIMIT_BURST:-10000}
+      DB_MAX_OPEN_CONNS: "25"
+      DB_MAX_IDLE_CONNS: "5"
+      DB_CONN_MAX_LIFETIME: 5m
+      JWT_ACCESS_EXPIRATION: 10m
+      JWT_REFRESH_EXPIRATION: 168h
+      PASSWORD_RESET_EXPIRATION: 30m
+    depends_on:
+      - postgres
+      - cassandra
+      - redis
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: telemetry
+      POSTGRES_PASSWORD: telemetry
+      POSTGRES_DB: telemetrygo
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U telemetry -d telemetrygo"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  cassandra:
+    image: cassandra:4.1
+    volumes:
+      - cassandra_data:/var/lib/cassandra
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  pg_data:
+  cassandra_data:
+  redis_data:

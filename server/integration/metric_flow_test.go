@@ -102,6 +102,34 @@ func TestMetricIngestInvalidStatus(t *testing.T) {
 	}
 }
 
+func TestMetricIngestInvalidValue(t *testing.T) {
+	r := setupRouter(t)
+	apiKey := createUserAndGetApiKey(t, r)
+
+	metrics := []map[string]string{
+		{"name": "CPU", "service": "api-gateway", "value": "not-a-number", "unit": "%", "status": "ok"},
+	}
+
+	resp := doJSON(t, r, http.MethodPost, "/api/v1/metrics", metrics, apiKey)
+	if resp.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 on invalid value, got %d: %s", resp.Code, resp.Body.String())
+	}
+}
+
+func TestMetricIngestMissingValue(t *testing.T) {
+	r := setupRouter(t)
+	apiKey := createUserAndGetApiKey(t, r)
+
+	metrics := []map[string]string{
+		{"name": "CPU", "service": "api-gateway", "unit": "%", "status": "ok"},
+	}
+
+	resp := doJSON(t, r, http.MethodPost, "/api/v1/metrics", metrics, apiKey)
+	if resp.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 on missing value, got %d: %s", resp.Code, resp.Body.String())
+	}
+}
+
 func TestMetricIngestWithoutApiKey(t *testing.T) {
 	r := setupRouter(t)
 

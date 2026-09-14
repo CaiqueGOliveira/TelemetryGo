@@ -23,7 +23,7 @@ func newLoginUsecase() (*LoginUsecase, *repositories.UserRepository, *auth.JwtSe
 func TestLoginSuccess(t *testing.T) {
 	uc, repo, _ := newLoginUsecase()
 
-	user, err := (&domain.User{}).CreateUser("user@example.com", "Caique", "Senha#Segura1")
+	user, err := domain.CreateUser("user@example.com", "Caique", "Senha#Segura1")
 	if err != nil {
 		t.Fatalf("unexpected error creating user: %v", err)
 	}
@@ -50,7 +50,7 @@ func TestLoginSuccess(t *testing.T) {
 func TestLoginWrongPassword(t *testing.T) {
 	uc, repo, _ := newLoginUsecase()
 
-	user, err := (&domain.User{}).CreateUser("user@example.com", "Caique", "Senha#Segura1")
+	user, err := domain.CreateUser("user@example.com", "Caique", "Senha#Segura1")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

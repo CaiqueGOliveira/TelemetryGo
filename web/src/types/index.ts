@@ -4,7 +4,7 @@ export interface Metric {
   id: string;
   name: string;
   service: string;
-  value: string;
+  value: number;
   unit: string;
   status: MetricStatus;
   timestamp: string;

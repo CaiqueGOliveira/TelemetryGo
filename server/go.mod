@@ -3,6 +3,8 @@ module github.com/CaiqueGOliveira/TelemetryGo
 go 1.27.0
 
 require (
+	github.com/DATA-DOG/go-sqlmock v1.5.2
+	github.com/alicebob/miniredis/v2 v2.39.0
 	github.com/gin-gonic/gin v1.12.0
 	github.com/gocql/gocql v1.7.0
 	github.com/golang-jwt/jwt/v5 v5.3.1
@@ -49,6 +51,7 @@ require (
 	github.com/scylladb/go-reflectx v1.0.1 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.3.2 // indirect
+	github.com/yuin/gopher-lua v1.1.1 // indirect
 	go.mongodb.org/mongo-driver/v2 v2.8.2 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	golang.org/x/arch v0.30.0 // indirect

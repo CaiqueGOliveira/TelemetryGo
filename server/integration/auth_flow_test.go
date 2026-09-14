@@ -12,6 +12,7 @@ import (
 	"github.com/CaiqueGOliveira/TelemetryGo/src/application"
 	itf "github.com/CaiqueGOliveira/TelemetryGo/src/application/interfaces"
 	"github.com/CaiqueGOliveira/TelemetryGo/src/controllers"
+	"github.com/CaiqueGOliveira/TelemetryGo/src/domain/messages"
 	"github.com/CaiqueGOliveira/TelemetryGo/src/infra/auth"
 	"github.com/CaiqueGOliveira/TelemetryGo/src/infra/messaging"
 	"github.com/CaiqueGOliveira/TelemetryGo/src/infra/middleware"
@@ -21,6 +22,10 @@ import (
 )
 
 func setupRouter(t *testing.T) *gin.Engine {
+	return setupRouterWith(t, messaging.NewNoOpPublisher())
+}
+
+func setupRouterWith(t *testing.T, eventPublisher messages.EventPublisher) *gin.Engine {
 	t.Helper()
 	gin.SetMode(gin.TestMode)
 
@@ -32,12 +37,29 @@ func setupRouter(t *testing.T) *gin.Engine {
 		log.Fatalf("failed to initialize jwt service: %v", err)
 	}
 
-	eventPublisher := messaging.NewNoOpPublisher()
-
 	createUserUsecase := application.NewCreateUserUsecase(repo, tokenProvider)
 	loginUsecase := application.NewLoginUsecase(tokenProvider, repo)
+	getUserUsecase := application.NewGetUserUsecase(repo)
+	updateUserUsecase := application.NewUpdateUserUsecase(repo)
+	changePasswordUsecase := application.NewChangePasswordUsecase(repo)
+	rotateApiKeyUsecase := application.NewRotateApiKeyUsecase(repo)
+	deleteUserUsecase := application.NewDeleteUserUsecase(repo)
+	forgotPasswordUsecase := application.NewForgotPasswordUsecase(repo, tokenProvider, 30*time.Minute)
+	resetPasswordUsecase := application.NewResetPasswordUsecase(repo, tokenProvider)
 
-	userController := controllers.NewUserController(createUserUsecase, loginUsecase, time.Hour*24*7, tokenProvider)
+	userController := controllers.NewUserController(
+		createUserUsecase,
+		loginUsecase,
+		getUserUsecase,
+		updateUserUsecase,
+		changePasswordUsecase,
+		rotateApiKeyUsecase,
+		deleteUserUsecase,
+		forgotPasswordUsecase,
+		resetPasswordUsecase,
+		time.Hour*24*7,
+		tokenProvider,
+	)
 
 	eventRepo := repositories.NewInMemoryEventRepository()
 	eventUsecase := application.NewEventUsecase(eventRepo, eventPublisher)
@@ -49,7 +71,7 @@ func setupRouter(t *testing.T) *gin.Engine {
 
 	highLimit := middleware.RateLimitConfig{RPS: 100000, Burst: 100000}
 
-	return routes.SetupRouter(userController, eventController, metricController, tokenProvider, repo, highLimit, highLimit)
+	return routes.SetupRouter(userController, eventController, metricController, tokenProvider, repo, highLimit, highLimit, nil)
 }
 
 func createUserAndGetApiKeyWithEmail(t *testing.T, r *gin.Engine, email string) string {
@@ -211,6 +233,28 @@ func TestFullAuthFlow(t *testing.T) {
 	if meResp.Code != http.StatusOK {
 		t.Fatalf("expected 200 on /me, got %d: %s", meResp.Code, meResp.Body.String())
 	}
+
+	var meBody struct {
+		Id     string `json:"id"`
+		Name   string `json:"name"`
+		Email  string `json:"email"`
+		ApiKey string `json:"api_key"`
+	}
+	if err := json.Unmarshal(meResp.Body.Bytes(), &meBody); err != nil {
+		t.Fatalf("unexpected error decoding me body: %v", err)
+	}
+	if meBody.Name != "Caique" {
+		t.Errorf("expected /me name Caique, got %q", meBody.Name)
+	}
+	if meBody.Email != "user@example.com" {
+		t.Errorf("expected /me email user@example.com, got %q", meBody.Email)
+	}
+	if meBody.ApiKey != createBody.ApiKey {
+		t.Errorf("expected /me api_key to match create, got %q != %q", meBody.ApiKey, createBody.ApiKey)
+	}
+	if meBody.Id == "" {
+		t.Error("expected /me to return id")
+	}
 }
 
 func TestLoginEndpointWrongCredentials(t *testing.T) {
@@ -294,6 +338,31 @@ func TestRefreshWithoutCookie(t *testing.T) {
 	resp := doJSON(t, r, http.MethodPost, "/api/v1/auth/refresh", nil, "")
 	if resp.Code != http.StatusUnauthorized {
 		t.Fatalf("expected 401 without cookie, got %d", resp.Code)
+	}
+}
+
+func TestCreateUserDuplicateEmail(t *testing.T) {
+	r := setupRouter(t)
+
+	first := doJSON(t, r, http.MethodPost, "/api/v1/users", map[string]string{
+		"name":     "Caique",
+		"email":    "user@example.com",
+		"password": "Senha#Segura1",
+	}, "")
+	if first.Code != http.StatusCreated {
+		t.Fatalf("expected 201 on create, got %d: %s", first.Code, first.Body.String())
+	}
+
+	duplicate := doJSON(t, r, http.MethodPost, "/api/v1/users", map[string]string{
+		"name":     "Outro",
+		"email":    "user@example.com",
+		"password": "Senha#Segura1",
+	}, "")
+	if duplicate.Code != http.StatusConflict {
+		t.Fatalf("expected 409 on duplicate email, got %d: %s", duplicate.Code, duplicate.Body.String())
+	}
+	if !bytes.Contains(duplicate.Body.Bytes(), []byte("email already in use")) {
+		t.Fatalf("expected error message about duplicate email, got: %s", duplicate.Body.String())
 	}
 }
 

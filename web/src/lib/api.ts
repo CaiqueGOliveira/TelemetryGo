@@ -1,4 +1,5 @@
 import axios, { type AxiosInstance } from "axios";
+import { clearSession } from "@/lib/session";
 import { useAuthStore } from "@/stores/auth-store";
 
 export function createApiClient(): AxiosInstance {
@@ -37,6 +38,7 @@ export function createApiClient(): AxiosInstance {
         } catch {
           useAuthStore.getState().setAccessToken(null);
           useAuthStore.getState().setUser(null);
+          clearSession();
         }
       }
 

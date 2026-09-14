@@ -1,4 +1,4 @@
-﻿package valueobjects
+package valueobjects
 
 import (
 	"strings"
@@ -41,9 +41,9 @@ func TestValidatePasswordMessages(t *testing.T) {
 		t.Fatal("expected error for password without required characters")
 	}
 	for _, msg := range []string{
-		"1 letra minúscula",
-		"1 letra maiúscula",
-		"1 caractere especial",
+		"lowercase letter",
+		"uppercase letter",
+		"special character",
 	} {
 		if !strings.Contains(err.Error(), msg) {
 			t.Errorf("expected error to contain %q, got: %v", msg, err)
@@ -58,13 +58,13 @@ func TestValidatePasswordPartial(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if strings.Contains(err.Error(), "minúscula") {
+	if strings.Contains(err.Error(), "lowercase letter") {
 		t.Error("lowercase present, should not complain about lowercase")
 	}
-	if !strings.Contains(err.Error(), "maiúscula") {
+	if !strings.Contains(err.Error(), "uppercase letter") {
 		t.Error("missing uppercase, should complain")
 	}
-	if !strings.Contains(err.Error(), "especial") {
+	if !strings.Contains(err.Error(), "special character") {
 		t.Error("missing special, should complain")
 	}
 }

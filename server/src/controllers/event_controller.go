@@ -1,12 +1,15 @@
 package controllers
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
 	"github.com/CaiqueGOliveira/TelemetryGo/src/application"
 	"github.com/CaiqueGOliveira/TelemetryGo/src/application/dtos"
+	r "github.com/CaiqueGOliveira/TelemetryGo/src/domain/repository"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 type EventController struct {
@@ -32,19 +35,74 @@ func (ec *EventController) Ingest(ctx *gin.Context) {
 		return
 	}
 
-	accepted, err := ec.eventUsecase.Ingest(events, ctx.GetString("user_id"))
+	accepted, published, err := ec.eventUsecase.Ingest(events, ctx.GetString("user_id"))
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, gin.H{"accepted": accepted})
+	ctx.JSON(http.StatusCreated, gin.H{
+		"accepted":  accepted,
+		"published": published,
+	})
 }
 
+const (
+	defaultListLimit = 50
+	maxListLimit     = 100
+)
+
 func (ec *EventController) List(ctx *gin.Context) {
-	events := ec.eventUsecase.List(ctx.GetString("user_id"))
+	start, err := parseTime(ctx.Query("start"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	end, err := parseTime(ctx.Query("end"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	filter := r.EventFilter{
+		Severity: ctx.Query("severity"),
+		Type:     ctx.Query("type"),
+		Service:  ctx.Query("service"),
+		Start:    start,
+		End:      end,
+	}
+
+	events, err := ec.eventUsecase.List(
+		ctx.GetString("user_id"),
+		filter,
+		parseLimit(ctx.Query("limit"), defaultListLimit, maxListLimit),
+		parseOffset(ctx.Query("offset")),
+	)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list events"})
+		return
+	}
 
 	ctx.JSON(http.StatusOK, dtos.ToEventResponseDtos(events))
+}
+
+func (ec *EventController) Delete(ctx *gin.Context) {
+	id, err := uuid.Parse(ctx.Param("id"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid event id"})
+		return
+	}
+
+	if err := ec.eventUsecase.Delete(ctx.GetString("user_id"), id); err != nil {
+		if errors.Is(err, r.ErrNotFound) {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "event not found"})
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete event"})
+		return
+	}
+
+	ctx.Status(http.StatusNoContent)
 }
 
 func (ec *EventController) Stream(ctx *gin.Context) {

@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { api } from "@/lib/api";
+import { clearSession, loadSession, saveSession } from "@/lib/session";
 import type { LoginFormData, RegisterFormData } from "@/schemas/auth-schema";
 
 interface User {
@@ -15,9 +16,11 @@ interface AuthState {
   accessToken: string | null;
   apiKey: string | null;
   isLoading: boolean;
+  isHydrated: boolean;
   setAccessToken: (token: string | null) => void;
   setUser: (user: User | null) => void;
   setApiKey: (apiKey: string | null) => void;
+  fetchUser: () => Promise<void>;
   login: (data: LoginFormData) => Promise<void>;
   register: (data: RegisterFormData) => Promise<RegisterResponse>;
   logout: () => Promise<void>;
@@ -36,11 +39,28 @@ interface RegisterResponse {
   api_key: string;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  accessToken: null,
-  apiKey: null,
+interface ApiError {
+  response?: {
+    status: number;
+  };
+}
+
+function isUnauthorized(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    (error as ApiError).response?.status === 401
+  );
+}
+
+const initialSession = loadSession();
+
+export const useAuthStore = create<AuthState>((set, get) => ({
+  user: initialSession.user,
+  accessToken: initialSession.accessToken,
+  apiKey: initialSession.apiKey,
   isLoading: false,
+  isHydrated: initialSession.accessToken !== null,
 
   setAccessToken: (token) => {
     set({ accessToken: token });
@@ -50,16 +70,30 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   setApiKey: (apiKey) => set({ apiKey }),
 
+  fetchUser: async () => {
+    if (!get().accessToken) return;
+    try {
+      const { data } = await api.get<User>("/v1/me");
+      set({ user: data, isHydrated: true });
+    } catch (error) {
+      if (isUnauthorized(error)) {
+        set({ user: null, accessToken: null, apiKey: null, isHydrated: true });
+        clearSession();
+      }
+    }
+  },
+
   login: async (data) => {
     set({ isLoading: true });
     try {
       const { data: res } = await api.post<LoginResponse>("/v1/login", data);
-      set({ accessToken: res.access_token });
+      set({ accessToken: res.access_token, isHydrated: true });
       if (res.api_key) {
-        set({ apiKey: res.api_key });
+        useAuthStore.getState().setApiKey(res.api_key);
       }
     } finally {
       set({ isLoading: false });
+      saveSession(get());
     }
   },
 
@@ -75,7 +109,9 @@ export const useAuthStore = create<AuthState>((set) => ({
         user: { id: res.id, name: res.name, email: res.email },
         accessToken: res.access_token,
         apiKey: res.api_key,
+        isHydrated: true,
       });
+      saveSession(get());
       return res;
     } finally {
       set({ isLoading: false });
@@ -86,7 +122,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       await api.post("/v1/auth/logout");
     } finally {
-      set({ user: null, accessToken: null, apiKey: null });
+      set({ user: null, accessToken: null, apiKey: null, isHydrated: true });
+      saveSession(get());
     }
   },
 }));

@@ -4,13 +4,14 @@ import (
 	"time"
 
 	vo "github.com/CaiqueGOliveira/TelemetryGo/src/domain/valueobjects"
+	"github.com/google/uuid"
 )
 
 type Metric struct {
-	Id        string
+	Id        uuid.UUID
 	Name      string
 	Service   string
-	Value     string
+	Value     float64
 	Unit      string
 	Status    vo.MetricStatus
 	Timestamp time.Time
@@ -18,10 +19,10 @@ type Metric struct {
 }
 
 func NewMetric(
-	id string,
+	id uuid.UUID,
 	name string,
 	service string,
-	value string,
+	value float64,
 	unit string,
 	status string,
 	timestamp time.Time,

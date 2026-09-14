@@ -1,5 +1,4 @@
 import { ThemeProvider } from "@/providers/theme-provider";
-import { AxiosProvider } from "@/providers/axios-provider";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -9,7 +8,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       enableSystem={false}
       disableTransitionOnChange
     >
-      <AxiosProvider>{children}</AxiosProvider>
+      {children}
     </ThemeProvider>
   );
 }

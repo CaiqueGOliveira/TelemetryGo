@@ -1,29 +1,57 @@
 package controllers
 
 import (
+	"errors"
 	"net/http"
 	"time"
 
 	"github.com/CaiqueGOliveira/TelemetryGo/src/application"
 	"github.com/CaiqueGOliveira/TelemetryGo/src/application/dtos"
 	t "github.com/CaiqueGOliveira/TelemetryGo/src/application/interfaces"
+	r "github.com/CaiqueGOliveira/TelemetryGo/src/domain/repository"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
 
 type UserController struct {
-	createUserUsecase *application.CreateUserUsecase
-	loginUsecase      *application.LoginUsecase
-	refreshExpiration time.Duration
-	jwtProvider       t.TokenProvider
+	createUserUsecase     *application.CreateUserUsecase
+	loginUsecase          *application.LoginUsecase
+	getUserUsecase        *application.GetUserUsecase
+	updateUserUsecase     *application.UpdateUserUsecase
+	changePasswordUsecase *application.ChangePasswordUsecase
+	rotateApiKeyUsecase   *application.RotateApiKeyUsecase
+	deleteUserUsecase     *application.DeleteUserUsecase
+	forgotPasswordUsecase *application.ForgotPasswordUsecase
+	resetPasswordUsecase  *application.ResetPasswordUsecase
+	refreshExpiration     time.Duration
+	jwtProvider           t.TokenProvider
 }
 
-func NewUserController(usecase *application.CreateUserUsecase, loginUsecase *application.LoginUsecase, refreshExpiration time.Duration, jwtProvider t.TokenProvider) *UserController {
+func NewUserController(
+	createUserUsecase *application.CreateUserUsecase,
+	loginUsecase *application.LoginUsecase,
+	getUserUsecase *application.GetUserUsecase,
+	updateUserUsecase *application.UpdateUserUsecase,
+	changePasswordUsecase *application.ChangePasswordUsecase,
+	rotateApiKeyUsecase *application.RotateApiKeyUsecase,
+	deleteUserUsecase *application.DeleteUserUsecase,
+	forgotPasswordUsecase *application.ForgotPasswordUsecase,
+	resetPasswordUsecase *application.ResetPasswordUsecase,
+	refreshExpiration time.Duration,
+	jwtProvider t.TokenProvider,
+) *UserController {
 	return &UserController{
-		createUserUsecase: usecase,
-		loginUsecase:      loginUsecase,
-		refreshExpiration: refreshExpiration,
-		jwtProvider:       jwtProvider,
+		createUserUsecase:     createUserUsecase,
+		loginUsecase:          loginUsecase,
+		getUserUsecase:        getUserUsecase,
+		updateUserUsecase:     updateUserUsecase,
+		changePasswordUsecase: changePasswordUsecase,
+		rotateApiKeyUsecase:   rotateApiKeyUsecase,
+		deleteUserUsecase:     deleteUserUsecase,
+		forgotPasswordUsecase: forgotPasswordUsecase,
+		resetPasswordUsecase:  resetPasswordUsecase,
+		refreshExpiration:     refreshExpiration,
+		jwtProvider:           jwtProvider,
 	}
 }
 
@@ -37,6 +65,10 @@ func (uc *UserController) CreateUser(ctx *gin.Context) {
 
 	result, err := uc.createUserUsecase.Execute(&dto)
 	if err != nil {
+		if errors.Is(err, r.ErrDuplicateEmail) {
+			ctx.JSON(http.StatusConflict, gin.H{"error": "email already in use"})
+			return
+		}
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -59,6 +91,16 @@ func (uc *UserController) CreateUser(ctx *gin.Context) {
 		"access_token": result.JwtAccess,
 		"api_key":      result.User.ApiKey,
 	})
+}
+
+func (uc *UserController) Me(ctx *gin.Context) {
+	result, err := uc.getUserUsecase.Execute(ctx.GetString("user_id"))
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, result)
 }
 
 func (uc *UserController) Login(ctx *gin.Context) {
@@ -148,4 +190,123 @@ func (uc *UserController) Logout(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{
 		"message": "logged out",
 	})
+}
+
+func (uc *UserController) UpdateProfile(ctx *gin.Context) {
+	var dto dtos.UpdateUserRequestDto
+
+	if err := ctx.ShouldBindJSON(&dto); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+
+	result, err := uc.updateUserUsecase.Execute(ctx.GetString("user_id"), &dto)
+	if err != nil {
+		switch {
+		case errors.Is(err, r.ErrDuplicateEmail):
+			ctx.JSON(http.StatusConflict, gin.H{"error": "email already in use"})
+			return
+		case errors.Is(err, r.ErrNotFound):
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+			return
+		default:
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+	}
+
+	ctx.JSON(http.StatusOK, result)
+}
+
+func (uc *UserController) ChangePassword(ctx *gin.Context) {
+	var dto dtos.ChangePasswordRequestDto
+
+	if err := ctx.ShouldBindJSON(&dto); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+
+	err := uc.changePasswordUsecase.Execute(ctx.GetString("user_id"), dto.CurrentPassword, dto.NewPassword)
+	if err != nil {
+		if errors.Is(err, r.ErrNotFound) {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+			return
+		}
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "password changed"})
+}
+
+func (uc *UserController) RotateApiKey(ctx *gin.Context) {
+	apiKey, err := uc.rotateApiKeyUsecase.Execute(ctx.GetString("user_id"))
+	if err != nil {
+		if errors.Is(err, r.ErrNotFound) {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+			return
+		}
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"api_key": apiKey})
+}
+
+func (uc *UserController) DeleteAccount(ctx *gin.Context) {
+	err := uc.deleteUserUsecase.Execute(ctx.GetString("user_id"))
+	if err != nil {
+		if errors.Is(err, r.ErrNotFound) {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+			return
+		}
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.Status(http.StatusNoContent)
+}
+
+func (uc *UserController) ForgotPassword(ctx *gin.Context) {
+	var dto dtos.ForgotPasswordRequestDto
+
+	if err := ctx.ShouldBindJSON(&dto); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+
+	resetToken, err := uc.forgotPasswordUsecase.Execute(dto.Email)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to request password reset"})
+		return
+	}
+
+	body := gin.H{
+		"message": "if the email exists, password reset instructions were sent",
+	}
+
+	// Demo: sem infraestrutura de email, o token é devolvido na resposta.
+	// Em produção, ele deve ser enviado por email e nunca retornado aqui.
+	if resetToken != "" {
+		body["reset_token"] = resetToken
+	}
+
+	ctx.JSON(http.StatusOK, body)
+}
+
+func (uc *UserController) ResetPassword(ctx *gin.Context) {
+	var dto dtos.ResetPasswordRequestDto
+
+	if err := ctx.ShouldBindJSON(&dto); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+
+	err := uc.resetPasswordUsecase.Execute(dto.Token, dto.NewPassword)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "password has been reset"})
 }

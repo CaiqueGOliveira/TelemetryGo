@@ -64,8 +64,20 @@ export default function RegisterPage() {
             <div className="space-y-2">
               <Label htmlFor="api_key">Sua API key</Label>
               <div className="flex gap-2">
-                <Input id="api_key" readOnly value={apiKey} className="font-mono" />
-                <Button type="button" variant="outline" size="icon" onClick={copyApiKey}>
+                <Input
+                  id="api_key"
+                  readOnly
+                  value={apiKey}
+                  className="font-mono"
+                  aria-label="Sua API key"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  aria-label="Copiar API key"
+                  onClick={copyApiKey}
+                >
                   {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
                 </Button>
               </div>
@@ -73,8 +85,8 @@ export default function RegisterPage() {
                 Esta chave não será mostrada novamente.
               </p>
             </div>
-            <Button className="w-full" onClick={() => router.push("/login")}>
-              Ir para o login
+            <Button className="w-full" onClick={() => router.push("/dashboard")}>
+              Ir para o dashboard
             </Button>
           </CardContent>
         </Card>
@@ -94,7 +106,7 @@ export default function RegisterPage() {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="name">Nome</Label>
-          <Input id="name" placeholder="Seu nome" {...register("name")} />
+          <Input id="name" placeholder="Seu nome" aria-label="Nome" {...register("name")} />
           {errors.name && (
             <p className="text-sm text-destructive">{errors.name.message}</p>
           )}
@@ -106,6 +118,8 @@ export default function RegisterPage() {
             id="email"
             type="email"
             placeholder="voce@exemplo.com"
+            aria-label="Email"
+            autoComplete="email"
             {...register("email")}
           />
           {errors.email && (
@@ -119,6 +133,8 @@ export default function RegisterPage() {
             id="password"
             type="password"
             placeholder="••••••••"
+            aria-label="Senha"
+            autoComplete="new-password"
             {...register("password")}
           />
           {errors.password && (
@@ -132,6 +148,8 @@ export default function RegisterPage() {
             id="confirmPassword"
             type="password"
             placeholder="••••••••"
+            aria-label="Confirmar senha"
+            autoComplete="new-password"
             {...register("confirmPassword")}
           />
           {errors.confirmPassword && (

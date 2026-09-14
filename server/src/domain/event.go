@@ -4,10 +4,11 @@ import (
 	"time"
 
 	vo "github.com/CaiqueGOliveira/TelemetryGo/src/domain/valueobjects"
+	"github.com/google/uuid"
 )
 
 type Event struct {
-	Id        string
+	Id        uuid.UUID
 	Type      string
 	Service   string
 	Message   string
@@ -17,7 +18,7 @@ type Event struct {
 }
 
 func NewEvent(
-	id string,
+	id uuid.UUID,
 	eventType string,
 	service string,
 	message string,
